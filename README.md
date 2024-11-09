@@ -12,8 +12,6 @@ _✨基于真寻机器人的抽老婆插件✨_
 
 ## 💿 安装
 
-<details open>
-
 <details>
 <summary>手动安装</summary>
 
@@ -43,4 +41,19 @@ _✨基于真寻机器人的抽老婆插件✨_
 
 ### 效果图
 
-如果有效果图的话
+<details>
+<summary>一些效果图展示</summary>
+
+    https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/Documents/draw.png
+
+    https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/Documents/draw_assign.png
+
+    https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/Documents/move.png
+
+    https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/Documents/probability.png
+
+    https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/Documents/view.png
+
+    https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/Documents/vote.png
+
+</details>
