@@ -1,0 +1,3 @@
+fuzzywuzzy
+matplotlib
+python-Levenshtein
