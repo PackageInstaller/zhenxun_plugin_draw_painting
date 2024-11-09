@@ -1,0 +1,2 @@
+# zhenxun_plugin_draw_wife
+基于真寻机器人的抽老婆插件
