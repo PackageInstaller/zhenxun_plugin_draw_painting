@@ -161,8 +161,10 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea
 .vscode
-*.png
+Wives/*.png
+Husbands/*.png
+Drop/*.png
 *.pt
 Middlewares
-Documents
+Documents/*.xlsx
 record.db
