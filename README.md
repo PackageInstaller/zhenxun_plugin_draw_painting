@@ -41,9 +41,6 @@ _✨基于真寻机器人的抽老婆插件✨_
 
 ### 效果图
 
-<details>
-<summary>一些效果图展示</summary>
-
     ![_](https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/Documents/draw.png)
 
     ![_](https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/Documents/draw_assign.png)
@@ -55,5 +52,3 @@ _✨基于真寻机器人的抽老婆插件✨_
     ![_](https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/Documents/view.png)
 
     ![_](https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/Documents/vote.png)
-
-</details>
