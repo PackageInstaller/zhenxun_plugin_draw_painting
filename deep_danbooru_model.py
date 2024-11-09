@@ -1,3 +1,5 @@
+# https://github.com/AUTOMATIC1111/TorchDeepDanbooru
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
