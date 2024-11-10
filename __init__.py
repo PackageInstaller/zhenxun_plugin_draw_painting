@@ -24,7 +24,7 @@ from nonebot.adapters.onebot.v11 import (
 from matplotlib.font_manager import FontProperties
 from matplotlib import pyplot as plt
 from .Database import db_handler
-from .utils import *
+from .utils.functions import *
 from typing import Dict
 from zhenxun.utils.enum import BlockType, PluginType
 from zhenxun.configs.utils import BaseBlock, PluginExtraData

@@ -18,12 +18,12 @@ from nonebot.adapters.onebot.v11 import (
     GroupMessageEvent,
     Message
 )
-from .Database import db_handler
+from ..Database import db_handler
 from . import deep_danbooru_model
 from matplotlib.font_manager import FontProperties
 from matplotlib import pyplot as plt
 
-plugin_dir = os.path.dirname(__file__)
+plugin_dir = os.path.dirname(os.path.dirname(__file__))
 model_dir = os.path.join(plugin_dir, "Model")
 font_folder = os.path.join(plugin_dir, "Fonts")
 font_path = os.path.join(font_folder, "Sarasa-Regular.ttc")
