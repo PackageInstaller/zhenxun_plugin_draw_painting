@@ -39,7 +39,7 @@ class CommandHandler:
         async def dependency(bot: Bot, matcher, event: Event):
             user_id = str(event.get_user_id())
 
-            if db_handler.get_user_info(user_id)['read_help'] == 0:
+            if int(db_handler.get_user_info(user_id)['read_help']) == 0:
                 try:
                     await bot.send(event, "使用前请先阅读帮助信息，发送 帮助抽游戏立绘 获取帮助信息。", reply_message=True)
                 except Exception as e:
