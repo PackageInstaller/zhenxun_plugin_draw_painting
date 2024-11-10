@@ -213,7 +213,7 @@ class DatabaseHandler:
                 UPDATE user_info
                 SET read_help = 1
                 WHERE user_id = ?
-                  AND read_help = 0
+                AND read_help = 0
             ''', (user_id,))
 
     @retry_on_error()
