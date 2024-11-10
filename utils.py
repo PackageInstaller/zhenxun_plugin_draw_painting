@@ -1,12 +1,12 @@
 import os
+import io
 import platform
 import struct
 import random
 import numpy as np
 import torch
-from .handler import *
 from PIL import Image
-from typing import Dict, List
+from typing import Dict, List, Union
 from fuzzywuzzy import fuzz
 from nonebot.params import Depends
 from nonebot.adapters.onebot.v11 import (
@@ -16,11 +16,16 @@ from nonebot.adapters.onebot.v11 import (
     GroupMessageEvent,
     Message
 )
-from .handler import *
+from .Database import db_handler
 from . import deep_danbooru_model
+from matplotlib.font_manager import FontProperties
+from matplotlib import pyplot as plt
+from .help_manager import help_manager
 
 plugin_dir = os.path.dirname(__file__)
 model_dir = os.path.join(plugin_dir, "Model")
+font_folder = os.path.join(plugin_dir, "Fonts")
+font_path = os.path.join(font_folder, "Sarasa-Regular.ttc")
 husbands_images_folder = os.path.join(plugin_dir, "Husbands")
 wives_images_folder = os.path.join(plugin_dir, "Wives")
 
@@ -32,18 +37,19 @@ model.eval()
 
 
 class CommandHandler:
-    """
-    命令处理类
-    """
+    """命令处理类"""
     def dependency() -> None:
         async def dependency(bot: Bot, matcher, event: Event):
             user_id = str(event.get_user_id())
-
+            
+            # 检查是否正在处理帮助确认
+            if help_manager.is_processing(user_id):
+                await bot.send(event, "请先完成帮助信息的确认流程。", reply_message=True)
+                await matcher.finish()
+            
             if int(db_handler.get_user_info(user_id)['read_help']) == 0:
-                try:
-                    await bot.send(event, "使用前请先阅读帮助信息，发送 帮助抽游戏立绘 获取帮助信息。", reply_message=True)
-                except Exception as e:
-                    await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
+                from . import handle_help_confirmation
+                await handle_help_confirmation(bot, event)
                 await matcher.finish()
 
         return Depends(dependency)
@@ -245,9 +251,8 @@ async def send_forward_msg_handler(bot, event, *args):
 
 async def perform_wife_rename(bot: Bot, event: Event, user_id: str, new_name: str):
     """老婆重命名"""
-    result = db_handler.get_card_name(user_id, 'Wife')
-    old_name = result[0]
-    game_name, char_name, *rest = old_name.split("_")
+    stored_name = db_handler.get_card_name(user_id, 'Wife')
+    game_name, char_name, *rest = stored_name.split("_")
     stored_image_suffix = "_".join(rest) if rest else ""
     renamed_images = db_handler.get_renamed_images()
     matching_images = [
@@ -294,9 +299,8 @@ async def perform_wife_rename(bot: Bot, event: Event, user_id: str, new_name: st
 
 async def perform_husband_rename(bot: Bot, event: Event, user_id: str, new_name: str):
     """老公重命名"""
-    result = db_handler.get_card_name(user_id, 'Husband')
-    old_name = result[0]
-    game_name, char_name, *rest = old_name.split("_")
+    stored_name = db_handler.get_card_name(user_id, 'Husband')
+    game_name, char_name, *rest = stored_name.split("_")
     stored_image_suffix = "_".join(rest) if rest else ""
     renamed_images = db_handler.get_renamed_images()
     matching_images = [
@@ -353,3 +357,106 @@ async def is_exact_match(img_name: str, stored_name: str) -> bool:
 
     # 游戏名和角色名
     return img_parts[:2] == stored_parts[:2]
+
+
+async def generate_and_send_stats(bot: Bot, event: Event, game_stats: Dict[str, Dict], limit: int):
+    """
+    生成并发送统计图表
+    
+    Args:
+        bot: Bot实例
+        event: 事件实例
+        game_stats: 游戏统计信息
+        limit: 显示数量限制
+    """
+    font_prop = FontProperties(fname=font_path)
+    sorted_games = sorted(game_stats.items(), key=lambda x: x[1]["count"], reverse=True)
+    display_games = sorted_games[:limit]
+    
+    text_lines = []
+    max_length = 0
+    
+    for rank, (game_name, stats) in enumerate(display_games, 1):
+        line = (
+            f"第 {rank} 位: {game_name}\n"
+            f"    占比: {stats['percentage']:.2f}%\n"
+            f"    角色数: {stats['char_count']}\n"
+            f"    平均皮肤数: {stats['avg_skins']:.1f}"
+        )
+        text_lines.append(line)
+        max_length = max(max_length, max(len(l) for l in line.split('\n')))
+
+    # 设置图表大小
+    fig_width = max_length * 0.15
+    fig_height = max(len(display_games) * 0.6, 1)
+    
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+    ax.axis('off')
+    fig.patch.set_facecolor('white')
+    
+    # 添加文本
+    ax.text(0, 0.5, "\n\n".join(text_lines), 
+            fontsize=12, ha='left', va='center', 
+            fontproperties=font_prop,
+            linespacing=1.5)
+
+    # 保存并发送图片
+    buf = io.BytesIO()
+    try:
+        plt.savefig(buf, format='png', bbox_inches='tight', transparent=False, dpi=120)
+        buf.seek(0)
+        await bot.send(event, MessageSegment.image(buf), reply_message=True)
+    finally:
+        buf.close()
+        plt.close(fig)
+
+def calculate_game_stats(images: List[str]) -> Dict[str, Dict[str, Union[int, float]]]:
+    """
+    计算游戏统计信息
+    
+    Args:
+        images: 图片文件名列表
+        
+    Returns:
+        Dict: 包含每个游戏统计信息的字典
+            {
+                "游戏名": {
+                    "count": 图片总数,
+                    "characters": 角色集合,
+                    "percentage": 占总数百分比,
+                    "char_count": 角色数量,
+                    "avg_skins": 平均皮肤数
+                }
+            }
+    """
+    total_images = len(images)
+    game_stats = {}
+
+    # 收集基础统计信息
+    for img in images:
+        parts = os.path.splitext(img)[0].split("_")
+        if len(parts) > 1:
+            game_name = parts[0]
+            if game_name not in game_stats:
+                game_stats[game_name] = {
+                    "count": 0,
+                    "characters": set(),
+                    "percentage": 0,
+                    "char_count": 0,
+                    "avg_skins": 0
+                }
+            game_stats[game_name]["count"] += 1
+            if len(parts) > 1:
+                game_stats[game_name]["characters"].add(parts[1])
+
+    # 计算百分比和其他统计数据
+    for game_name, stats in game_stats.items():
+        count = stats["count"]
+        char_count = len(stats["characters"])
+        stats.update({
+            "percentage": (count / total_images) * 100,
+            "char_count": char_count,
+            "avg_skins": count / char_count if char_count > 0 else 0
+        })
+
+    return game_stats

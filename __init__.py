@@ -23,9 +23,9 @@ from nonebot.adapters.onebot.v11 import (
 )
 from matplotlib.font_manager import FontProperties
 from matplotlib import pyplot as plt
-from .handler import *
+from .Database import db_handler
 from .utils import *
-from nonebot_plugin_apscheduler import scheduler
+from typing import List, Dict, Union
 from zhenxun.utils.enum import BlockType, PluginType
 from zhenxun.configs.utils import BaseBlock, PluginExtraData
 from zhenxun.utils.message import MessageUtils
@@ -50,13 +50,13 @@ font_path = os.path.join(font_folder, "Sarasa-Regular.ttc")
 
 wives_draw = on_regex(r"^抽(?!.*老公).*老婆.*$", priority=5)
 wives_view = on_fullmatch("我老婆", priority=5)
-wives_rename = on_command("老婆改名", priority=5)
+wives_rename = on_command("老婆改名", priority=5, expire_time=None)
 wives_probability = on_command("老婆概率", priority=5)
 delete_husbands = on_fullmatch("这是男的", priority=5)
 
 husbands_draw = on_regex(r"^抽(?!.*老婆).*老公.*$", priority=5)
 husbands_view = on_fullmatch("我老公", priority=5)
-husbands_rename = on_command("老公改名", priority=5)
+husbands_rename = on_command("老公改名", priority=5, expire_time=None)
 husbands_probability = on_command("老公概率", priority=5)
 delete_wives = on_fullmatch("这是女的", priority=5)
 
@@ -338,7 +338,7 @@ async def handle_husbands_draw(bot: Bot, event: Event):
     match_prefix = "_".join(image_name_short.split("_")[:2])
 
     matching_images = [
-        img for img in os.listdir(wives_images_folder) 
+        img for img in os.listdir(husbands_images_folder) 
         if os.path.splitext(img)[0].startswith(match_prefix) and 
         (os.path.splitext(img)[0] == match_prefix or os.path.splitext(img)[0][len(match_prefix)] == "_")
     ]
@@ -374,8 +374,12 @@ async def handle_wives_view(bot: Bot, event: Event):
             await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
         await wives_view.finish()
 
-    stored_name = result[0]
-    display_name = "_".join(stored_name.split("_")[:2])
+    stored_name = result
+    name_parts = stored_name.split("_")
+    if len(name_parts) >= 2:
+        display_name = "_".join(name_parts[:2])
+    else:
+        display_name = stored_name
     match_prefix = display_name
 
     matching_images = [
@@ -437,8 +441,12 @@ async def handle_husbands_view(bot: Bot, event: Event):
             await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
         await husbands_view.finish()
 
-    stored_name = result[0]
-    display_name = "_".join(stored_name.split("_")[:2])
+    stored_name = result
+    name_parts = stored_name.split("_")
+    if len(name_parts) >= 2:
+        display_name = "_".join(name_parts[:2])
+    else:
+        display_name = stored_name
     match_prefix = display_name
 
     matching_images = [
@@ -491,18 +499,17 @@ async def handle_husbands_view(bot: Bot, event: Event):
 async def handle_wives_rename(bot: Bot, event: Event, state: T_State):
     """老婆改名"""
     user_id = str(event.get_user_id())
-    result = db_handler.get_card_name(user_id, 'Wife')
+    stored_name = db_handler.get_card_name(user_id, 'Wife')
     message = event.get_plaintext().strip()
     match = re.match(r"老婆改名(.+)", message)
 
-    if not result:
+    if not stored_name:
         try:
             await bot.send(event, f"你还没有老婆呢，快发送 抽老婆 来抽取吧", reply_message=True)
         except Exception as e:
             await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
         await wives_rename.finish()
 
-    stored_name = result[0]
     matching_images = [img for img in os.listdir(wives_images_folder) if os.path.splitext(img)[0] == stored_name]
     
     if not matching_images:
@@ -512,9 +519,8 @@ async def handle_wives_rename(bot: Bot, event: Event, state: T_State):
             await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
         await wives_rename.finish()
     
-    #  "老婆改名 <新名称>" 格式
     if match:
-        original_game_name = result[0].split("_")[0]
+        original_game_name = stored_name.split("_")[0]
         new_name = match.group(1).strip()
         new_game_name = new_name.split("_")[0]
 
@@ -547,15 +553,16 @@ async def handle_wives_rename(bot: Bot, event: Event, state: T_State):
         await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
     state["awaiting_name"] = True
     state["user_id"] = user_id
+    state["session_id"] = event.get_session_id()
 
 
-@wives_rename.got("new_name")
+@wives_rename.got("new_name", prompt="请输入新的名字：")
 async def handle_got_new_wives_name(bot: Bot, event: Event, state: T_State):
     """新名字"""
     if state.get("awaiting_name") and state.get("user_id") == str(event.get_user_id()):
         new_name = event.get_plaintext().strip()
-        result = db_handler.get_card_name(state["user_id"], 'Wife')
-        original_game_name = result[0].split("_")[0]
+        stored_name = db_handler.get_card_name(state["user_id"], 'Wife')
+        original_game_name = stored_name.split("_")[0]
         new_game_name = new_name.split("_")[0]
 
         if new_name.lower() == "取消":
@@ -571,7 +578,8 @@ async def handle_got_new_wives_name(bot: Bot, event: Event, state: T_State):
                 await bot.send(event, f"名字不能为空，请输入有效的名字", reply_message=True)
             except Exception as e:
                 await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
-            await wives_rename.finish()
+            await wives_rename.reject()
+            return
         
         # 检查新名字的游戏名是否一致
         if new_game_name != original_game_name:
@@ -579,18 +587,19 @@ async def handle_got_new_wives_name(bot: Bot, event: Event, state: T_State):
                 await bot.send(event, f"新名字中的游戏名与原始游戏名不一致，请保持游戏名一致。", reply_message=True)
             except Exception as e:
                 await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
-            await wives_rename.finish()
+            await wives_rename.reject()
+            return
 
         if not re.match(r"^[^\s_]+(_[^\s_]+)+$", new_name):
             try:
                 await bot.send(event, f"名字格式不正确，请确保每段内容用下划线连接且无多余空格", reply_message=True)
             except Exception as e:
                 await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
-            await wives_rename.finish()
+            await wives_rename.reject()
+            return
         
 
-        result = db_handler.get_card_name(state["user_id"], 'Wife')
-        old_name = result[0]
+        old_name = stored_name
         game_name, char_name, *rest = old_name.split("_")
         stored_image_suffix = "_".join(rest) if rest else ""
 
@@ -644,19 +653,17 @@ async def handle_got_new_wives_name(bot: Bot, event: Event, state: T_State):
 async def handle_husbands_rename(bot: Bot, event: Event, state: T_State):
     """老公改名"""
     user_id = str(event.get_user_id())
-    result = db_handler.get_card_name(user_id, 'Husband')
+    stored_name = db_handler.get_card_name(user_id, 'Husband')
     message = event.get_plaintext().strip()
     match = re.match(r"老公改名(.+)", message)
     
-
-    if not result:
+    if not stored_name:
         try:
             await bot.send(event, f"你还没有老公呢，快发送 抽老公 来抽取吧", reply_message=True)
         except Exception as e:
             await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
         await husbands_rename.finish()
 
-    stored_name = result[0]
     matching_images = [img for img in os.listdir(husbands_images_folder) if os.path.splitext(img)[0] == stored_name]
     
     if not matching_images:
@@ -668,7 +675,7 @@ async def handle_husbands_rename(bot: Bot, event: Event, state: T_State):
     
     # "老婆改名 <新名称>" 格式
     if match:
-        original_game_name = result[0].split("_")[0]
+        original_game_name = stored_name.split("_")[0]
         new_name = match.group(1).strip()
         new_game_name = new_name.split("_")[0]
         
@@ -701,14 +708,15 @@ async def handle_husbands_rename(bot: Bot, event: Event, state: T_State):
         await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
     state["awaiting_name"] = True
     state["user_id"] = user_id
+    state["session_id"] = event.get_session_id()
 
-@husbands_rename.got("new_name")
+@husbands_rename.got("new_name", prompt="请输入新的名字：")
 async def handle_got_new_husbands_name(bot: Bot, event: Event, state: T_State):
     """新名字"""
     if state.get("awaiting_name") and state.get("user_id") == str(event.get_user_id()):
         new_name = event.get_plaintext().strip()
-        result = db_handler.get_card_name(state["user_id"], 'Husband')
-        original_game_name = result[0].split("_")[0]
+        stored_name = db_handler.get_card_name(state["user_id"], 'Husband')
+        original_game_name = stored_name.split("_")[0]
         new_game_name = new_name.split("_")[0]
 
         if new_name.lower() == "取消":
@@ -724,7 +732,8 @@ async def handle_got_new_husbands_name(bot: Bot, event: Event, state: T_State):
                 await bot.send(event, f"名字不能为空，请输入有效的名字", reply_message=True)
             except Exception as e:
                 await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
-            await husbands_rename.finish()
+            await husbands_rename.reject()
+            return
         
         # 检查新名字的游戏名是否一致
         if new_game_name != original_game_name:
@@ -732,18 +741,19 @@ async def handle_got_new_husbands_name(bot: Bot, event: Event, state: T_State):
                 await bot.send(event, f"新名字中的游戏名与原始游戏名不一致，请保持游戏名一致。原游戏名为 {original_game_name}", reply_message=True)
             except Exception as e:
                 await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
-            await husbands_rename.finish()
+            await husbands_rename.reject()
+            return
 
         if not re.match(r"^[^\s_]+(_[^\s_]+)+$", new_name):
             try:
                 await bot.send(event, f"名字格式不正确，请确保每段内容用下划线连接且无多余空格", reply_message=True)
             except Exception as e:
                 await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
-            await husbands_rename.finish()
+            await husbands_rename.reject()
+            return
         
 
-        result = db_handler.get_card_name(state["user_id"], 'Husband')
-        old_name = result[0]
+        old_name = stored_name
         game_name, char_name, *rest = old_name.split("_")
         stored_image_suffix = "_".join(rest) if rest else ""
 
@@ -796,134 +806,63 @@ async def handle_got_new_husbands_name(bot: Bot, event: Event, state: T_State):
 @wives_probability.handle(parameterless=[CommandHandler.dependency()])
 async def handle_wives_probability(bot: Bot, event: Event):
     """老婆概率"""
-    message_text = event.get_plaintext().strip().replace(" ", "")
-    all_images = os.listdir(wives_images_folder)
-    font_prop = FontProperties(fname=font_path)
+    try:
+        message_text = event.get_plaintext().strip().replace(" ", "")
 
-    match = re.search(r'老婆概率(\d+|[一二三四五六七八九十百]+)', message_text)
-    if match:
-        number_str = match.group(1)
-        if number_str.isdigit():
-            limit = int(number_str)
-        else:  # 如果是中文
-            parsed_number = await parse_chinese_numeral(number_str)
-            if parsed_number:
-                limit = parsed_number
-    elif message_text == "老婆概率":
-        # 如果没有指定数字，输出所有游戏名的占比
+        all_images = [f for f in os.listdir(wives_images_folder) if f.count('_') >= 1]
+        if not all_images:
+            await bot.send(event, "没有找到任何有效的图片", reply_message=True)
+            await wives_probability.finish()
+            return
+
         limit = len(all_images)
+        match = re.search(r'老婆概率(\d+|[一二三四五六七八九十百]+)', message_text)
+        if match:
+            number_str = match.group(1)
+            if number_str.isdigit():
+                limit = int(number_str)
+            else:  # 如果是中文数字
+                parsed_number = await parse_chinese_numeral(number_str)
+                if parsed_number:
+                    limit = parsed_number
 
-    total_images = len(all_images)
-    game_counts = {}
+        game_stats = calculate_game_stats(all_images)
+        await generate_and_send_stats(bot, event, game_stats, limit)
 
-    for img in all_images:
-        parts = img.split("_")
-        if len(parts) > 1:  # 确保至少有游戏名称
-            game_name = parts[0]
-            game_counts[game_name] = game_counts.get(game_name, 0) + 1
-
-    if total_images > 0:
-        sorted_game_counts = sorted(game_counts.items(), key=lambda x: x[1], reverse=True)
-        inner_games = sorted_game_counts[:min(limit // 2, len(sorted_game_counts))]
-        outer_games = sorted_game_counts[min(limit // 2, len(sorted_game_counts)):limit]
-
-        text_lines = []
-        max_length = 0
-        rank = 1
-        for game_name, count in inner_games + outer_games:
-            percentage = (count / total_images) * 100
-            line = f"第 {rank} 位: {game_name}: 占比 {percentage:.3f}%"
-            text_lines.append(line)
-            max_length = max(max_length, len(line))
-            rank += 1
-
-        # 根据最长名称动态调整宽度，并根据行数动态调整高度
-        fig_width = max_length * 0.1
-        fig_height = max(len(text_lines) * 0.1 + 1, 1)
-        fig, ax = plt.subplots(figsize=(fig_width, fig_height))  
-        ax.axis('off')
-        fig.patch.set_facecolor('white')
-
-        # 左对齐
-        ax.text(0, 0.5, "\n".join(text_lines), fontsize=14, ha='left', va='center', fontproperties=font_prop)
-
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', bbox_inches='tight', transparent=False)
-        buf.seek(0)
-
-        await bot.send(event, MessageSegment.image(buf), reply_message=True)
-
-        buf.close()
-    else:
-        await bot.send(event, "没有找到任何图片")
+    except Exception as e:
+        await bot.send(event, f"处理请求时发生错误，请稍后重试", reply_message=True)
         await wives_probability.finish()
-
 
 
 @husbands_probability.handle(parameterless=[CommandHandler.dependency()])
 async def handle_husbands_probability(bot: Bot, event: Event):
     """老公概率"""
-    message_text = event.get_plaintext().strip().replace(" ", "")
-    all_images = os.listdir(husbands_images_folder)
-    font_prop = FontProperties(fname=font_path)
+    try:
+        message_text = event.get_plaintext().strip().replace(" ", "")
 
-    match = re.search(r'老公概率(\d+|[一二三四五六七八九十百]+)', message_text)
-    if match:
-        number_str = match.group(1)
-        if number_str.isdigit():
-            limit = int(number_str)
-        else:  # 如果是中文
-            parsed_number = await parse_chinese_numeral(number_str)
-            if parsed_number:
-                limit = parsed_number
-    elif message_text == "老公概率":
-        # 如果没有指定数字，输出所有游戏名的占比
+        all_images = [f for f in os.listdir(husbands_images_folder) if f.count('_') >= 1]
+        if not all_images:
+            await bot.send(event, "没有找到任何有效的图片", reply_message=True)
+            await wives_probability.finish()
+            return
+
         limit = len(all_images)
+        match = re.search(r'老公概率(\d+|[一二三四五六七八九十百]+)', message_text)
+        if match:
+            number_str = match.group(1)
+            if number_str.isdigit():
+                limit = int(number_str)
+            else:  # 如果是中文数字
+                parsed_number = await parse_chinese_numeral(number_str)
+                if parsed_number:
+                    limit = parsed_number
 
-    total_images = len(all_images)
-    game_counts = {}
+        game_stats = calculate_game_stats(all_images)
+        await generate_and_send_stats(bot, event, game_stats, limit)
 
-    for img in all_images:
-        parts = img.split("_")
-        if len(parts) > 1:  # 确保至少有游戏名称
-            game_name = parts[0]
-            game_counts[game_name] = game_counts.get(game_name, 0) + 1
-
-    if total_images > 0:
-        sorted_game_counts = sorted(game_counts.items(), key=lambda x: x[1], reverse=True)
-        inner_games = sorted_game_counts[:min(limit // 2, len(sorted_game_counts))]
-        outer_games = sorted_game_counts[min(limit // 2, len(sorted_game_counts)):limit]
-
-        text_lines = []
-        max_length = 0
-        rank = 1
-        for game_name, count in inner_games + outer_games:
-            percentage = (count / total_images) * 100
-            line = f"第 {rank} 位: {game_name}: 占比 {percentage:.3f}%"
-            text_lines.append(line)
-            max_length = max(max_length, len(line))
-            rank += 1
-
-        # 根据最长名称动态调整宽度，并根据行数动态调整高度
-        fig_width = max_length * 0.1
-        fig_height = max(len(text_lines) * 0.1 + 1, 1)
-        fig, ax = plt.subplots(figsize=(fig_width, fig_height))  
-        ax.axis('off')
-        fig.patch.set_facecolor('white')
-
-        # 左对齐
-        ax.text(0, 0.5, "\n".join(text_lines), fontsize=14, ha='left', va='center', fontproperties=font_prop)
-
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', bbox_inches='tight', transparent=False)
-        buf.seek(0)
-
-        await bot.send(event, MessageSegment.image(buf), reply_message=True)
-
-        buf.close()
-    else:
-        await bot.send(event, "没有找到任何图片")
-        await husbands_probability.finish()
+    except Exception as e:
+        await bot.send(event, f"处理请求时发生错误，请稍后重试", reply_message=True)
+        await wives_probability.finish()
 
 
 @delete_husbands.handle(parameterless=[CommandHandler.dependency()])
@@ -934,19 +873,18 @@ async def handle_delete_husbands(bot: Bot, event: Event):
         await delete_husbands.finish()
 
     user_id = str(event.get_user_id())
-    result = db_handler.get_card_name(user_id, 'Wife')
+    stored_name = db_handler.get_card_name(user_id, 'Wife')
 
     if not os.path.exists(husbands_images_folder):
         os.makedirs(husbands_images_folder)
 
-    if not result:
+    if not stored_name:
         try:
             await bot.send(event, f"你还没有老婆呢，快发送 抽老婆 来抽取吧", reply_message=True)
         except Exception as e:
             await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
         await delete_husbands.finish()
 
-    stored_name = result[0]
     matching_images = [
         img for img in os.listdir(wives_images_folder)
         if await is_exact_match(img, stored_name)
@@ -1048,19 +986,18 @@ async def handle_delete_wives(bot: Bot, event: Event):
         await delete_husbands.finish()
 
     user_id = str(event.get_user_id())
-    result = db_handler.get_card_name(user_id, 'Husband')
+    stored_name = db_handler.get_card_name(user_id, 'Husband')
 
     if not os.path.exists(husbands_images_folder):
         os.makedirs(husbands_images_folder)
 
-    if not result:
+    if not stored_name:
         try:
             await bot.send(event, f"你还没有老公呢，快发送 抽老公 来抽取吧", reply_message=True)
         except Exception as e:
             await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
         await delete_wives.finish()
 
-    stored_name = result[0]
     matching_images = [
         img for img in os.listdir(husbands_images_folder)
         if await is_exact_match(img, stored_name)
@@ -1154,7 +1091,68 @@ async def handle_delete_wives(bot: Bot, event: Event):
 
 
 # 投票状态
-ongoing_votes = {}
+ongoing_votes: Dict[str, Dict] = {}
+
+async def handle_help_confirmation(bot: Bot, event: Event):
+    """处理帮助确认事件"""
+    font_prop = FontProperties(fname=font_path)
+    help_text = __plugin_meta__.usage
+    
+    text_lines = help_text.split('\n')
+    max_length = max(len(line) for line in text_lines)
+    fig_width = max_length * 0.1
+    fig_height = max(len(text_lines) * 0.1 + 1, 1)
+    
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+    ax.axis('off')
+    fig.patch.set_facecolor('white')
+    ax.text(0, 0.5, help_text, fontsize=14, ha='left', va='center', fontproperties=font_prop)
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight', transparent=False)
+    buf.seek(0)
+    
+    message = (MessageSegment.image(buf) + 
+              MessageSegment.text("\n请在60秒内回应：\n贴第一个表情表示已阅读并同意\n贴第二个表情表示不同意"))
+    
+    response = await bot.send(event, message)
+    bot_message_id = response['message_id']
+    
+    help_manager.add_confirmation(str(event.get_user_id()), bot_message_id)
+    
+    emoji_ids = ["38", "417"]  # 同意、不同意
+    for emoji_id in emoji_ids:
+        await asyncio.sleep(0.1)
+        await bot.call_api("set_msg_emoji_like", message_id=bot_message_id, emoji_id=emoji_id)
+    
+    await asyncio.sleep(60)
+    confirmation = help_manager.get_confirmation(str(event.get_user_id()))
+    if confirmation and not confirmation.confirmed:
+        await bot.send(event, "您没有及时确认帮助信息，请重新触发指令以查看帮助。", reply_message=True)
+        help_manager.remove_confirmation(str(event.get_user_id()))
+    
+    buf.close()
+
+@on_notice
+async def handle_help_emoji_response(bot: Bot, event: NoticeEvent):
+    """处理帮助确认的表情回应"""
+    if event.notice_type == "group_msg_emoji_like":
+        message_id = event.dict().get('message_id')
+        user_id = str(event.dict().get('user_id'))
+        emoji_id = event.dict().get('likes')[0].get('emoji_id')
+        
+        confirmation = help_manager.get_confirmation(user_id)
+        if confirmation and confirmation.message_id == message_id and confirmation.processing:
+            if emoji_id == "38":  # 同意
+                help_manager.set_confirmed(user_id, True)
+                db_handler.mark_help_as_read(user_id)
+                await bot.send(event, "感谢您确认阅读帮助信息，现在您可以正常使用所有指令了。\n请注意，如果出现乱用指令的情况，将会被永久封禁。", reply_message=True)
+            
+            elif emoji_id == "417":  # 不同意
+                help_manager.set_confirmed(user_id, False)
+                await bot.send(event, "您已选择不同意，将无法使用相关功能。如需使用，请重新触发指令并确认帮助信息。", reply_message=True)
+            
+            help_manager.remove_confirmation(user_id)
 
 @on_notice
 async def handle_emoji_vote(bot: Bot, event: NoticeEvent):
