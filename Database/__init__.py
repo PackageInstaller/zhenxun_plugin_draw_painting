@@ -98,7 +98,58 @@ class DatabaseHandler:
         with self.get_db_cursor() as cursor:
             # 使用事务创建所有表
             cursor.executescript('''
-                -- [原有的建表语句保持不变] --
+                CREATE TABLE IF NOT EXISTS draw_record (
+                    user_id TEXT,
+                    card_name TEXT,
+                    times TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    card_type TEXT,
+                    PRIMARY KEY (user_id, card_type)
+                );
+
+                CREATE TABLE IF NOT EXISTS vote_record (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    owner_user_id TEXT,
+                    image_name TEXT,
+                    vote_result TEXT,
+                    vote_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    voters TEXT,
+                    UNIQUE(image_name)
+                );
+
+                CREATE TABLE IF NOT EXISTS renamed_record (
+                    user_id TEXT,
+                    old_image_name TEXT,
+                    new_image_name TEXT,
+                    rename_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, old_image_name)
+                );
+
+                CREATE TABLE IF NOT EXISTS moved_record (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT,
+                    command TEXT,
+                    moved_images TEXT,
+                    usage_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    card_type TEXT
+                );
+
+                CREATE TABLE IF NOT EXISTS draw_history_record (
+                    user_id TEXT,
+                    card_type TEXT,
+                    history TEXT,
+                    total_count INTEGER DEFAULT 0,
+                    last_draw_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, card_type)
+                );
+
+                CREATE TABLE IF NOT EXISTS user_info (
+                    user_id TEXT PRIMARY KEY,
+                    read_help INTEGER DEFAULT 0
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_card_name ON draw_record (card_name, card_type);
+                CREATE INDEX IF NOT EXISTS idx_vote_image ON vote_record (image_name);
+                CREATE INDEX IF NOT EXISTS idx_draw_history ON draw_history_record (user_id, card_type, last_draw_time);
             ''')
 
     @retry_on_error()
@@ -160,8 +211,7 @@ class DatabaseHandler:
         with self.get_db_cursor() as cursor:
             cursor.execute('''
                 UPDATE user_info
-                SET read_help = 1,
-                    updated_at = CURRENT_TIMESTAMP
+                SET read_help = 1
                 WHERE user_id = ?
                   AND read_help = 0
             ''', (user_id,))
