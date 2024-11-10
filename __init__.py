@@ -25,7 +25,7 @@ from matplotlib.font_manager import FontProperties
 from matplotlib import pyplot as plt
 from .Database import db_handler
 from .utils import *
-from typing import List, Dict, Union
+from typing import Dict
 from zhenxun.utils.enum import BlockType, PluginType
 from zhenxun.configs.utils import BaseBlock, PluginExtraData
 from zhenxun.utils.message import MessageUtils
@@ -1113,7 +1113,7 @@ async def handle_help_confirmation(bot: Bot, event: Event):
     buf.seek(0)
     
     message = (MessageSegment.image(buf) + 
-              MessageSegment.text("\n请在60秒内回应：\n贴第一个表情表示已阅读并同意\n贴第二个表情表示不同意\n如果您的QQ版本过低，也可以直接使用 帮助抽游戏立绘 来查看帮助信息。"))
+              MessageSegment.text("\n请先阅读并同意帮助信息并在60秒内回应：\n贴第一个表情表示已阅读并同意\n贴第二个表情表示不同意\n如果您的QQ版本过低，也可以直接使用 帮助抽游戏立绘 来查看帮助信息。"))
     
     response = await bot.send(event, message)
     bot_message_id = response['message_id']

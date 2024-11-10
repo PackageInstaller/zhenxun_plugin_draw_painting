@@ -23,7 +23,7 @@ logging.basicConfig(
 logger = logging.getLogger('DatabaseHandler')
 
 class DatabaseError(Exception):
-    """自定义数据库异常"""
+    """数据库异常，再说"""
     pass
 
 class ConnectionPool:
@@ -37,7 +37,7 @@ class ConnectionPool:
         # 初始化连接池
         for _ in range(max_connections):
             conn = sqlite3.connect(db_path, check_same_thread=False)
-            conn.row_factory = sqlite3.Row  # 使用字典形式返回结果
+            conn.row_factory = sqlite3.Row
             self.connections.put(conn)
 
     def get_connection(self) -> sqlite3.Connection:
@@ -158,13 +158,11 @@ class DatabaseHandler:
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         with self.get_db_cursor() as cursor:
-            # 更新当前抽卡记录
             cursor.execute('''
                 INSERT OR REPLACE INTO draw_record (user_id, card_name, card_type)
                 VALUES (?, ?, ?)
             ''', (user_id, card_name, card_type))
 
-            # 获取现有历史记录
             cursor.execute('''
                 SELECT history, total_count
                 FROM draw_history_record
@@ -175,13 +173,11 @@ class DatabaseHandler:
             history = json.loads(result['history']) if result and result['history'] else []
             total_count = result['total_count'] + 1 if result else 1
             
-            # 添加新记录，保持原有的数据格式
             history.append({
                 'timestamp': timestamp,
                 'card_name': card_name
             })
 
-            # 更新历史记录
             cursor.execute('''
                 INSERT OR REPLACE INTO draw_history_record 
                 (user_id, card_type, history, total_count)
@@ -231,16 +227,6 @@ class DatabaseHandler:
         with self.get_db_cursor() as cursor:
             cursor.execute('SELECT old_image_name, new_image_name FROM renamed_record')
             return [(row['old_image_name'], row['new_image_name']) for row in cursor.fetchall()]
-
-    @retry_on_error()
-    def update_draw_record(self, user_id: str, card_name: str, card_type: str = 'Wife'):
-        """更新抽卡记录并同时更新历史记录"""
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        with self.get_db_cursor() as cursor:
-            cursor.execute('''
-                INSERT OR REPLACE INTO draw_record (user_id, card_name, times, card_type)
-                VALUES (?, ?, ?, ?)
-            ''', (user_id, card_name, timestamp, card_type))
 
     @retry_on_error()
     def get_last_trigger_time(self, user_id: str, card_type: str = 'Wife') -> Optional[datetime]:
@@ -298,16 +284,6 @@ class DatabaseHandler:
         with self.get_db_cursor() as cursor:
             cursor.execute('SELECT old_image_name, new_image_name FROM renamed_record')
             return [(row['old_image_name'], row['new_image_name']) for row in cursor.fetchall()]
-
-    @retry_on_error()
-    def update_draw_record(self, user_id: str, card_name: str, card_type: str = 'Wife') -> None:
-        """更新历史记录，确保一个 user_id 和 card_type 组合只能有一条记录"""
-        with self.get_db_cursor() as cursor:
-            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            cursor.execute('''
-                INSERT OR REPLACE INTO draw_record (user_id, card_name, times, card_type)
-                VALUES (?, ?, ?, ?)
-            ''', (user_id, card_name, timestamp, card_type))
 
     @retry_on_error()
     def get_last_trigger_time(self, user_id: str, card_type: str = 'Wife') -> Optional[datetime]:
@@ -446,6 +422,5 @@ class DatabaseHandler:
         """关闭数据库连接池"""
         self.pool.close_all()
 
-# 创建全局实例
 db_handler = DatabaseHandler()
 atexit.register(db_handler.close)
