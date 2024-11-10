@@ -89,11 +89,11 @@ class DatabaseHandler:
 
     def get_user_info(self, user_id: str) -> dict:
         """
-        获取用户信息
+        获取用户信息，如果用户不存在则创建新用户
         
         Args:
             user_id: 用户ID
-            
+                
         Returns:
             dict: 包含用户信息的字典
         """
@@ -102,6 +102,21 @@ class DatabaseHandler:
         
         self.c.execute('SELECT * FROM user_info WHERE user_id = ?', (user_id,))
         result = self.c.fetchone()
+        
+        if result is None:
+            default_values = {
+                'user_id': user_id,
+                'read_help': 0,
+            }
+            
+            fields = ', '.join(default_values.keys())
+            placeholders = ', '.join(['?' for _ in default_values])
+            insert_sql = f'INSERT INTO user_info ({fields}) VALUES ({placeholders})'
+            
+            self.c.execute(insert_sql, list(default_values.values()))
+            self.conn.commit()
+            
+            return default_values
         
         return dict(zip(columns, result))
     
