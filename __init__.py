@@ -106,7 +106,7 @@ async def handle_help(bot: Bot, event: Event):
     buf = io.BytesIO()
     plt.savefig(buf, format='png', bbox_inches='tight', transparent=False)
     buf.seek(0)
-    if db_handler.get_user_info(str(event.get_user_id()))['read_help'] == 0:
+    if int(db_handler.get_user_info(str(event.get_user_id()))['read_help']) == 0:
         warning_message = "现在您可以正常使用所有指令了。\n请注意，如果出现乱用指令的情况，将会被永久封禁。"
     else:
         warning_message = ""
