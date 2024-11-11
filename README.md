@@ -38,17 +38,17 @@ _✨基于真寻机器人的抽老婆插件✨_
 
 ## 🎉 效果图
 
-![_](https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/Documents/draw.png)
+![_](https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/documents/draw.png)
 
-![_](https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/Documents/draw_assign.png)
+![_](https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/documents/draw_assign.png)
 
-![_](https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/Documents/move.png)
+![_](https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/documents/move.png)
 
-![_](https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/Documents/probability.png)
+![_](https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/documents/probability.png)
 
-![_](https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/Documents/view.png)
+![_](https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/documents/view.png)
 
-![_](https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/Documents/vote.png)
+![_](https://github.com/PackageInstaller/zhenxun_plugin_draw_wife/blob/master/documents/vote.png)
 
 
 ## 🎉 致谢
