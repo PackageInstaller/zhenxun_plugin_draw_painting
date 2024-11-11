@@ -916,7 +916,7 @@ async def handle_delete_husbands(bot: Bot, event: Event):
             source_info = "私聊"
         
         message_content = (f"来自{source_info}的用户{user_nickname}({user_id})"
-                         f"为概率大于60%的图片使用了移动指令，下面是将要被移动的图片")
+                         f"为概率大于60%的图片使用了指令 这是男的，下面是将要被移动的图片")
         
         list_tp.append({
             "type": "node",
@@ -1028,7 +1028,7 @@ async def handle_delete_wives(bot: Bot, event: Event):
             source_info = "私聊"
         
         message_content = (f"来自{source_info}的用户{user_nickname}({user_id})"
-                         f"为概率大于60%的图片使用了移动指令，下面是将要被移动的图片")
+                         f"为概率大于60%的图片使用了指令 这是女的，下面是将要被移动的图片")
         
         list_tp.append({
             "type": "node",
