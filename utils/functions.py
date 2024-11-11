@@ -46,7 +46,7 @@ class CommandHandler:
                 await matcher.finish()
             
             if int(db_handler.get_user_info(user_id)['read_help']) == 0:
-                from . import handle_help_confirmation
+                from .. import handle_help_confirmation
                 await handle_help_confirmation(bot, event)
                 await matcher.finish()
 
