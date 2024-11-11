@@ -18,22 +18,19 @@ from nonebot.adapters.onebot.v11 import (
     GroupMessageEvent,
     Message
 )
-from ..Database import db_handler
+from ..config import paths, device
+from ..database import db_handler
 from . import deep_danbooru_model
 from matplotlib.font_manager import FontProperties
 from matplotlib import pyplot as plt
 
-plugin_dir = os.path.dirname(os.path.dirname(__file__))
-model_dir = os.path.join(plugin_dir, "Model")
-font_folder = os.path.join(plugin_dir, "Fonts")
-font_path = os.path.join(font_folder, "Sarasa-Regular.ttc")
-husbands_images_folder = os.path.join(plugin_dir, "Husbands")
-wives_images_folder = os.path.join(plugin_dir, "Wives")
-
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+husbands_images_folder = paths.HUSBANDS_IMAGES_FOLDER
+wives_images_folder = paths.WIVES_IMAGES_FOLDER
+drop_folder = paths.DROP_FOLDER
+font_path = paths.FONT_PATH
 model = deep_danbooru_model.DeepDanbooruModel()
-model.load_state_dict(torch.load(os.path.join(model_dir, "model-resnet_custom_v3.pt"), weights_only=True))
-model = model.to(DEVICE)
+model.load_state_dict(torch.load(os.path.join(paths.MODEL_DIR, "model-resnet_custom_v3.pt"), weights_only=True))
+model = model.to(device.DEVICE)
 model.eval()
 
 
@@ -91,12 +88,12 @@ async def determine_gender(img_path):
         pic = Image.open(img_path).convert("RGB").resize((512, 512))
         a = np.expand_dims(np.array(pic, dtype=np.float32), 0) / 255
         x = torch.from_numpy(a)
-        x = x.to(DEVICE)
+        x = x.to(device.DEVICE)
 
         # 推理
         with torch.no_grad():
             y = model(x)[0].detach()
-            if DEVICE.type == "cuda":
+            if device.DEVICE.type == "cuda":
                 y = y.cpu()
             y = y.numpy()
             

@@ -23,7 +23,8 @@ from nonebot.adapters.onebot.v11 import (
 )
 from matplotlib.font_manager import FontProperties
 from matplotlib import pyplot as plt
-from .Database import db_handler
+from .config import paths
+from .database import db_handler
 from .utils.functions import *
 from typing import Dict
 from zhenxun.utils.enum import BlockType, PluginType
@@ -41,12 +42,11 @@ from zhenxun.utils.enum import GoldHandle, PropHandle
 from zhenxun.models.user_props_log import UserPropsLog
 from zhenxun.models.group_member_info import GroupInfoUser
 
-plugin_dir = os.path.dirname(__file__)
-husbands_images_folder = os.path.join(plugin_dir, "Husbands")
-wives_images_folder = os.path.join(plugin_dir, "Wives")
-drop_folder = os.path.join(plugin_dir, "Drop")
-font_folder = os.path.join(plugin_dir, "Fonts")
-font_path = os.path.join(font_folder, "Sarasa-Regular.ttc")
+
+husbands_images_folder = paths.HUSBANDS_IMAGES_FOLDER
+wives_images_folder = paths.WIVES_IMAGES_FOLDER
+drop_folder = paths.DROP_FOLDER
+font_path = paths.FONT_PATH
 
 wives_draw = on_regex(r"^抽(?!.*老公).*老婆.*$", priority=5)
 wives_view = on_fullmatch("我老婆", priority=5)
