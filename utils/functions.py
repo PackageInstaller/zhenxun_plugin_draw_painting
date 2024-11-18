@@ -102,7 +102,7 @@ class CommandHandler:
                 await handle_help_confirmation(bot, event)
                 await matcher.finish()
 
-        return Depends(dependency)\
+        return Depends(dependency)
         
 
 # 游戏别名
@@ -119,10 +119,11 @@ GAME_ALIASES: Dict[str, List[str]] = {
     "崩坏：星穹铁道": ["星铁", "崩铁"],
     "少女前线：云图计划": ["云图"],
     "玛娜希斯回响": ["麻辣鸡丝"],
-    "边狱公司": ["084", "宝宝巴士", "鳊鱼公司", "鳊鱼巴士"],
+    "边狱公司": ["084", "宝宝巴士", "鳊鱼公司", "鳊鱼巴士", "边狱巴士"],
     "千年之旅": ["千年"],
     "为了谁的炼金术师": ["为谁而炼金"],
     "战舰少女R": ["舰R"],
+    "绯红神约": ["绯色回响", "绯色"]
 }
 
 # 别名游戏名

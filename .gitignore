@@ -166,5 +166,6 @@ husbands/*.png
 drop/*.png
 *.pt
 middlewares
+temp/*
 documents/*.xlsx
 record.db
