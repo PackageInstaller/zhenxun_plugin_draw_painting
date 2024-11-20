@@ -160,9 +160,9 @@ class DatabaseHandler:
         
         with self.get_db_cursor() as cursor:
             cursor.execute('''
-                INSERT OR REPLACE INTO draw_record (user_id, card_name, card_type)
-                VALUES (?, ?, ?)
-            ''', (user_id, card_name, card_type))
+                INSERT OR REPLACE INTO draw_record (user_id, card_name, times, card_type)
+                VALUES (?, ?, ?, ?)
+            ''', (user_id, card_name, timestamp, card_type))
 
             cursor.execute('''
                 SELECT history, total_count

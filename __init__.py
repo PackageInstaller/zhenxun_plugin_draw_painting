@@ -136,16 +136,16 @@ async def handle_wives_draw(bot: Bot, event: Event):
         else:
             game_name = None
     
-    # if user_id not in bot.config.superusers: # 普通用户 event.sender.role == "admin" "owner"
-    #     last_draw_time = db_handler.get_last_trigger_time(user_id, 'Wife')
-    #     if last_draw_time:
-    #         time_difference = int((datetime.now() - last_draw_time).total_seconds())  # 转换为整数秒
-    #         if time_difference < 300:  # 5分钟
-    #             try:
-    #                 await bot.send(event, f"合不合适也要先待满5分钟吧！\n还剩下{format_time(300 - time_difference)}。", reply_message=True)
-    #             except Exception as e:
-    #                 await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
-    #             await wives_draw.finish()
+    if user_id not in bot.config.superusers: # 普通用户 event.sender.role == "admin" "owner"
+        last_draw_time = db_handler.get_last_trigger_time(user_id, 'Wife')
+        if last_draw_time:
+            time_difference = int((datetime.now() - last_draw_time).total_seconds())  # 转换为整数秒
+            if time_difference < 300:  # 5分钟
+                try:
+                    await bot.send(event, f"合不合适也要先待满5分钟吧！\n还剩下{format_time(300 - time_difference)}。", reply_message=True)
+                except Exception as e:
+                    await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
+                await wives_draw.finish()
 
     # if game_name:
     #     try:
@@ -256,16 +256,16 @@ async def handle_husbands_draw(bot: Bot, event: Event):
         else:
             game_name = None
 
-    # if user_id not in bot.config.superusers: # 普通用户
-    #     last_draw_time = db_handler.get_last_trigger_time(user_id, 'Husband')
-    #     if last_draw_time:
-    #         time_difference = int((datetime.now() - last_draw_time).total_seconds())  # 转换为整数秒
-    #         if time_difference < 300:  # 5分钟
-    #             try:
-    #                 await bot.send(event, f"合不合适也要先待满5分钟吧！\n还剩下{format_time(300 - time_difference)}。", reply_message=True)
-    #             except Exception as e:
-    #                 await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
-    #             await husbands_draw.finish()
+    if user_id not in bot.config.superusers: # 普通用户
+        last_draw_time = db_handler.get_last_trigger_time(user_id, 'Husband')
+        if last_draw_time:
+            time_difference = int((datetime.now() - last_draw_time).total_seconds())  # 转换为整数秒
+            if time_difference < 300:  # 5分钟
+                try:
+                    await bot.send(event, f"合不合适也要先待满5分钟吧！\n还剩下{format_time(300 - time_difference)}。", reply_message=True)
+                except Exception as e:
+                    await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
+                await husbands_draw.finish()
 
     # if game_name:
     #     try:
