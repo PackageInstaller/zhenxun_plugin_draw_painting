@@ -142,7 +142,8 @@ async def handle_wives_draw(bot: Bot, event: Event):
             time_difference = int((datetime.now() - last_draw_time).total_seconds())  # 转换为整数秒
             if time_difference < 300:  # 5分钟
                 try:
-                    await bot.send(event, f"合不合适也要先待满5分钟吧！\n还剩下{format_time(300 - time_difference)}。", reply_message=True)
+                    remaining_time = await format_time(300 - time_difference)
+                    await bot.send(event, f"合不合适也要先待满5分钟吧！\n还剩下{remaining_time}。", reply_message=True)
                 except Exception as e:
                     await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
                 await wives_draw.finish()
@@ -262,7 +263,8 @@ async def handle_husbands_draw(bot: Bot, event: Event):
             time_difference = int((datetime.now() - last_draw_time).total_seconds())  # 转换为整数秒
             if time_difference < 300:  # 5分钟
                 try:
-                    await bot.send(event, f"合不合适也要先待满5分钟吧！\n还剩下{format_time(300 - time_difference)}。", reply_message=True)
+                    remaining_time = await format_time(300 - time_difference)
+                    await bot.send(event, f"合不合适也要先待满5分钟吧！\n还剩下{remaining_time}。", reply_message=True)
                 except Exception as e:
                     await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
                 await husbands_draw.finish()
