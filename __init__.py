@@ -75,6 +75,7 @@ __plugin_meta__ = PluginMetadata(
     老婆/老公概率 ?[数量参数可选，默认全部] [查看各游戏占比]
     这是男的/女的 [抽老婆抽到男的的时候可以用，另一个同理，只能处理自己的立绘]
     投票删除 [回复抽到的图片，非男非女时可以使用]
+    请注意，如果出现乱用指令的情况，将会被永久封禁。
     """.strip(),
     extra=PluginExtraData(
         author="少姜",
@@ -1148,11 +1149,11 @@ async def handle_help_emoji_response(bot: Bot, event: NoticeEvent):
             if emoji_id == "38":  # 同意
                 help_manager.set_confirmed(user_id, True)
                 db_handler.mark_help_as_read(user_id)
-                await bot.send(event, "感谢您确认阅读帮助信息，现在您可以正常使用所有指令了。\n请注意，如果出现乱用指令的情况，将会被永久封禁。", reply_message=True)
+                await bot.send(event, "感谢您同意霸王条款，现在您可以正常使用所有指令了。", reply_message=True)
             
             elif emoji_id == "417":  # 不同意
                 help_manager.set_confirmed(user_id, False)
-                await bot.send(event, "您已选择不同意，将无法使用相关功能。如需使用，请重新触发指令并确认帮助信息。", reply_message=True)
+                await bot.send(event, "您已选择不同意，将无法使用相关功能。如需使用，请重新触发指令并同意霸王条款。", reply_message=True)
             
             help_manager.remove_confirmation(user_id)
 

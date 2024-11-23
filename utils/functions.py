@@ -94,7 +94,7 @@ class CommandHandler:
             
             # 检查是否正在处理帮助确认
             if help_manager.is_processing(user_id):
-                await bot.send(event, "请先完成帮助信息的确认流程。", reply_message=True)
+                await bot.send(event, "请先同意霸王条款再使用其他指令。", reply_message=True)
                 await matcher.finish()
             
             if int(db_handler.get_user_info(user_id)['read_help']) == 0:
