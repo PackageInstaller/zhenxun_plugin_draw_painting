@@ -31,6 +31,8 @@ from zhenxun.utils.enum import PluginType
 from zhenxun.configs.utils import PluginExtraData
 from zhenxun.services.log import logger
 from zhenxun.configs.config import BotConfig
+from zhenxun.utils.enum import BlockType, PluginType
+from zhenxun.configs.utils import BaseBlock, PluginExtraData
 
 
 husbands_images_folder = paths.HUSBANDS_IMAGES_FOLDER
@@ -1082,69 +1084,84 @@ async def handle_delete_wives(bot: Bot, event: Event):
             await delete_wives.finish()
 
 
-# 投票状态
-ongoing_votes: Dict[str, Dict] = {}
-
 async def handle_help_confirmation(bot: Bot, event: Event):
     """处理帮助确认事件"""
-    font_prop = FontProperties(fname=font_path)
-    help_text = __plugin_meta__.usage
-    
-    text_lines = help_text.split('\n')
-    max_length = max(len(line) for line in text_lines)
-    fig_width = max_length * 0.1
-    fig_height = max(len(text_lines) * 0.1 + 1, 1)
-    
-    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-    ax.axis('off')
-    fig.patch.set_facecolor('white')
-    ax.text(0, 0.5, help_text, fontsize=14, ha='left', va='center', fontproperties=font_prop)
+    try:
+        font_prop = FontProperties(fname=font_path)
+        help_text = __plugin_meta__.usage
+        
+        text_lines = help_text.split('\n')
+        max_length = max(len(line) for line in text_lines)
+        fig_width = max_length * 0.1
+        fig_height = max(len(text_lines) * 0.1 + 1, 1)
+        
+        fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+        ax.axis('off')
+        fig.patch.set_facecolor('white')
+        ax.text(0, 0.5, help_text, fontsize=14, ha='left', va='center', fontproperties=font_prop)
 
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight', transparent=False)
-    buf.seek(0)
-    
-    message = (MessageSegment.image(buf) + 
-              MessageSegment.text("\n请先阅读并同意帮助信息并在60秒内回应：\n贴第一个表情表示已阅读并同意\n贴第二个表情表示不同意\n如果您的QQ版本过低，也可以直接使用 帮助抽游戏立绘 来查看帮助信息。"))
-    
-    response = await bot.send(event, message)
-    bot_message_id = response['message_id']
-    
-    await help_manager.add_confirmation(str(event.get_user_id()), bot_message_id)
-    
-    emoji_ids = ["38", "417"]  # 同意、不同意
-    for emoji_id in emoji_ids:
-        await asyncio.sleep(0.1)
-        await bot.call_api("set_msg_emoji_like", message_id=bot_message_id, emoji_id=emoji_id)
-    
-    await asyncio.sleep(60)
-    confirmation = help_manager.get_confirmation(str(event.get_user_id()))
-    if confirmation and not confirmation.confirmed:
-        await bot.send(event, "您没有及时确认帮助信息，请重新触发指令以查看帮助。", reply_message=True)
-        help_manager.remove_confirmation(str(event.get_user_id()))
-    
-    buf.close()
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight', transparent=False)
+        buf.seek(0)
+        
+        message = (MessageSegment.image(buf) + 
+                  MessageSegment.text("\n请先阅读并同意帮助信息并在60秒内回应：\n贴第一个表情表示已阅读并同意\n贴第二个表情表示不同意\n如果您的QQ版本过低，也可以直接使用 帮助抽游戏立绘 来查看帮助信息。"))
+        
+        response = await bot.send(event, message)
+        bot_message_id = response['message_id']
+        original_message_id = event.message_id
+        
+        await help_manager.add_confirmation(
+            str(event.get_user_id()),
+            bot_message_id,
+            original_message_id,
+            bot,
+            event
+        )
+        
+        emoji_ids = ["38", "417"]  # 同意、不同意
+        for emoji_id in emoji_ids:
+            await asyncio.sleep(0.1)
+            await bot.call_api("set_msg_emoji_like", message_id=bot_message_id, emoji_id=emoji_id)
+        
+    except Exception as e:
+        logger.error(f"处理帮助确认时发生错误: {e}")
+        await bot.send(event, "处理帮助确认时发生错误，请稍后重试。")
+    finally:
+        if 'buf' in locals():
+            buf.close()
+        plt.close('all')
+
 
 @on_notice
 async def handle_help_emoji_response(bot: Bot, event: NoticeEvent):
     """处理帮助确认的表情回应"""
-    if event.notice_type == "group_msg_emoji_like":
-        message_id = event.dict().get('message_id')
-        user_id = str(event.dict().get('user_id'))
-        emoji_id = event.dict().get('likes')[0].get('emoji_id')
-        
-        confirmation = help_manager.get_confirmation(user_id)
-        if confirmation and confirmation.message_id == message_id and confirmation.processing:
-            if emoji_id == "38":  # 同意
-                await help_manager.set_confirmed(user_id, True)
-                db_handler.mark_help_as_read(user_id)
-                await bot.send(event, "感谢您同意霸王条款，现在您可以正常使用所有指令了。", reply_message=True)
+    try:
+        if event.notice_type == "group_msg_emoji_like":
+            message_id = event.dict().get('message_id')
+            user_id = str(event.dict().get('user_id'))
+            emoji_id = event.dict().get('likes')[0].get('emoji_id')
             
-            elif emoji_id == "417":  # 不同意
-                await help_manager.set_confirmed(user_id, False)
-                await bot.send(event, "您已选择不同意，将无法使用相关功能。如需使用，请重新触发指令并同意霸王条款。", reply_message=True)
-            
-            help_manager.remove_confirmation(user_id)
+            confirmation = help_manager.get_confirmation(user_id)
+            if confirmation and confirmation.message_id == message_id and confirmation.processing:
+                if emoji_id == "38":  # 同意
+                    await help_manager.set_confirmed(user_id, True)
+                    db_handler.mark_help_as_read(user_id)
+                    reply_msg = MessageSegment.reply(confirmation.original_message_id) + "感谢您同意霸王条款，现在您可以正常使用所有指令了。"
+                    await bot.send(event, reply_msg)
+                
+                elif emoji_id == "417":  # 不同意
+                    await help_manager.set_confirmed(user_id, False)
+                    reply_msg = MessageSegment.reply(confirmation.original_message_id) + "您已选择不同意，将无法使用相关功能。如需使用，请重新触发指令并同意霸王条款。"
+                    await bot.send(event, reply_msg)
+                
+                help_manager.remove_confirmation(user_id)
+    except Exception as e:
+        logger.error(f"处理表情响应时发生错误: {e}")
+
+
+# 投票状态
+ongoing_votes: Dict[str, Dict] = {}
 
 @on_notice
 async def handle_emoji_vote(bot: Bot, event: NoticeEvent):
