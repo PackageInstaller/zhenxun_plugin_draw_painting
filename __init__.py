@@ -27,20 +27,10 @@ from .config import paths
 from .database import db_handler
 from .utils.functions import *
 from typing import Dict
-from zhenxun.utils.enum import BlockType, PluginType
-from zhenxun.configs.utils import BaseBlock, PluginExtraData
-from zhenxun.utils.message import MessageUtils
+from zhenxun.utils.enum import PluginType
+from zhenxun.configs.utils import PluginExtraData
 from zhenxun.services.log import logger
-from zhenxun.utils.platform import broadcast_group
 from zhenxun.configs.config import BotConfig
-from zhenxun.configs.path_config import IMAGE_PATH
-from zhenxun.utils.common_utils import CommonUtils
-from zhenxun.models.goods_info import GoodsInfo
-from zhenxun.models.user_console import UserConsole
-from zhenxun.models.user_gold_log import UserGoldLog
-from zhenxun.utils.enum import GoldHandle, PropHandle
-from zhenxun.models.user_props_log import UserPropsLog
-from zhenxun.models.group_member_info import GroupInfoUser
 
 
 husbands_images_folder = paths.HUSBANDS_IMAGES_FOLDER
@@ -81,8 +71,7 @@ __plugin_meta__ = PluginMetadata(
         author="少姜",
         version="1.0",
         plugin_type=PluginType.NORMAL,
-        menu_type="抽卡相关",
-        limits=[BaseBlock(check_type=BlockType.GROUP)],
+        menu_type="抽卡相关"
     ).dict(),
 )
 
