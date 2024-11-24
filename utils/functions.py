@@ -44,65 +44,76 @@ class HelpConfirmationState:
 class HelpConfirmationManager:
     _instance = None
     _help_confirmations: Dict[str, HelpConfirmationState] = {}
-
+    
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(HelpConfirmationManager, cls).__new__(cls)
         return cls._instance
-
+    
     @classmethod
-    def add_confirmation(cls, user_id: str, message_id: int) -> None:
+    async def add_confirmation(cls, user_id: str, message_id: int) -> None:
         cls._help_confirmations[user_id] = HelpConfirmationState(
             message_id=message_id,
             confirmed=False,
             processing=True,
             start_time=datetime.now()
         )
-
+    
     @classmethod
     def get_confirmation(cls, user_id: str) -> Optional[HelpConfirmationState]:
         return cls._help_confirmations.get(user_id)
-
+    
     @classmethod
     def remove_confirmation(cls, user_id: str) -> None:
         cls._help_confirmations.pop(user_id, None)
-
+    
     @classmethod
-    def set_confirmed(cls, user_id: str, confirmed: bool = True) -> None:
+    async def set_confirmed(cls, user_id: str, confirmed: bool = True) -> None:
         if user_id in cls._help_confirmations:
             cls._help_confirmations[user_id].confirmed = confirmed
             cls._help_confirmations[user_id].processing = False
-
+    
     @classmethod
-    def is_processing(cls, user_id: str) -> bool:
+    async def is_processing(cls, user_id: str, db_handler) -> bool:
+        user_info = db_handler.get_user_info(user_id)
+        if user_info and int(user_info['read_help']) == 1:
+            cls.remove_confirmation(user_id)
+            return False
+            
         confirmation = cls._help_confirmations.get(user_id)
         if not confirmation:
             return False
+            
         if (datetime.now() - confirmation.start_time).total_seconds() > 60:
             cls.remove_confirmation(user_id)
             return False
+            
         return confirmation.processing
 
 help_manager = HelpConfirmationManager()
-
-
+    
 class CommandHandler:
     """命令处理类"""
     def dependency() -> None:
         async def dependency(bot: Bot, matcher, event: Event):
             user_id = str(event.get_user_id())
             
-            # 检查是否正在处理帮助确认
-            if help_manager.is_processing(user_id):
+            user_info = db_handler.get_user_info(user_id)
+            if user_info and int(user_info['read_help']) == 1:
+                return
+            
+            if await help_manager.is_processing(user_id, db_handler):
                 await bot.send(event, "请先同意霸王条款再使用其他指令。", reply_message=True)
                 await matcher.finish()
             
-            if int(db_handler.get_user_info(user_id)['read_help']) == 0:
+            if int(user_info['read_help']) == 0:
                 from .. import handle_help_confirmation
                 await handle_help_confirmation(bot, event)
                 await matcher.finish()
-
+                
         return Depends(dependency)
+
+
         
 
 # 游戏别名

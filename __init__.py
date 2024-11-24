@@ -1121,7 +1121,7 @@ async def handle_help_confirmation(bot: Bot, event: Event):
     response = await bot.send(event, message)
     bot_message_id = response['message_id']
     
-    help_manager.add_confirmation(str(event.get_user_id()), bot_message_id)
+    await help_manager.add_confirmation(str(event.get_user_id()), bot_message_id)
     
     emoji_ids = ["38", "417"]  # 同意、不同意
     for emoji_id in emoji_ids:
@@ -1147,12 +1147,12 @@ async def handle_help_emoji_response(bot: Bot, event: NoticeEvent):
         confirmation = help_manager.get_confirmation(user_id)
         if confirmation and confirmation.message_id == message_id and confirmation.processing:
             if emoji_id == "38":  # 同意
-                help_manager.set_confirmed(user_id, True)
+                await help_manager.set_confirmed(user_id, True)
                 db_handler.mark_help_as_read(user_id)
                 await bot.send(event, "感谢您同意霸王条款，现在您可以正常使用所有指令了。", reply_message=True)
             
             elif emoji_id == "417":  # 不同意
-                help_manager.set_confirmed(user_id, False)
+                await help_manager.set_confirmed(user_id, False)
                 await bot.send(event, "您已选择不同意，将无法使用相关功能。如需使用，请重新触发指令并同意霸王条款。", reply_message=True)
             
             help_manager.remove_confirmation(user_id)
