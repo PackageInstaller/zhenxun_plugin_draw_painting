@@ -73,6 +73,7 @@ __plugin_meta__ = PluginMetadata(
         author="少姜",
         version="1.0",
         plugin_type=PluginType.NORMAL,
+        limits=[BaseBlock(check_type=BlockType.GROUP)],
         menu_type="抽卡相关"
     ).dict(),
 )
