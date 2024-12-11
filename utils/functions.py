@@ -81,7 +81,7 @@ class HelpConfirmationManager:
     async def _handle_timeout(cls, user_id: str, bot: Bot, event: Event):
         """处理超时"""
         try:
-            await asyncio.sleep(60)  # 60秒超时
+            await asyncio.sleep(120)  # 60秒超时
             confirmation = cls.get_confirmation(user_id)
             if confirmation and not confirmation.confirmed:
                 try:
@@ -145,7 +145,7 @@ class HelpConfirmationManager:
             if not confirmation:
                 return False
                 
-            if (datetime.now() - confirmation.start_time).total_seconds() > 60:
+            if (datetime.now() - confirmation.start_time).total_seconds() > 120: # 超时
                 cls.remove_confirmation(user_id)
                 return False
                 
@@ -168,6 +168,8 @@ class CommandHandler:
                 return
             
             if await help_manager.is_processing(user_id, db_handler):
+                if matcher.state.get("_command_name_") == "help":
+                    return
                 await bot.send(event, "请先同意霸王条款再使用其他指令。", reply_message=True)
                 await matcher.finish()
             
@@ -188,7 +190,7 @@ GAME_ALIASES: Dict[str, List[str]] = {
     "碧蓝航线": ["azurlane", "blhx"],
     "碧蓝幻想": ["gbf", "肝报废"],
     "少女前线": ["sgb", "少前"],
-    "少女前线2：追放": ["sgb2", "少前2", "少前追放", "追放"],
+    "少女前线2：追放": ["sgb2", "少前2", "少前追放", "追放", "少女前线二"],
     "歧路旅人: 大陆的霸者": ["大坝", "大霸"],
     "崩坏：星穹铁道": ["星铁", "崩铁"],
     "少女前线：云图计划": ["云图"],

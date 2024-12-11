@@ -82,8 +82,14 @@ __plugin_meta__ = PluginMetadata(
 @help.handle()
 async def handle_help(bot: Bot, event: Event):
     """帮助指令，输出为图片形式"""
+    user_id = str(event.get_user_id())
+    
+    # 如果存在确认状态，移除它
+    confirmation = help_manager.get_confirmation(user_id)
+    if confirmation:
+        help_manager.remove_confirmation(user_id)
+    
     font_prop = FontProperties(fname=font_path)
-
     help_text = __plugin_meta__.usage
 
     text_lines = help_text.split('\n')
@@ -99,17 +105,20 @@ async def handle_help(bot: Bot, event: Event):
     buf = io.BytesIO()
     plt.savefig(buf, format='png', bbox_inches='tight', transparent=False)
     buf.seek(0)
-    if int(db_handler.get_user_info(str(event.get_user_id()))['read_help']) == 0:
+    
+    if int(db_handler.get_user_info(user_id)['read_help']) == 0:
         warning_message = "现在您可以正常使用所有指令了。\n请注意，如果出现乱用指令的情况，将会被永久封禁。"
     else:
         warning_message = ""
     message = MessageSegment.image(buf) + MessageSegment.text(warning_message)
 
-    db_handler.mark_help_as_read(str(event.get_user_id()))
+    # 标记帮助信息为已读
+    db_handler.mark_help_as_read(user_id)
 
     await bot.send(event, message, reply_message=True)
 
     buf.close()
+    plt.close('all')
 
 
 @wives_draw.handle(parameterless=[CommandHandler.dependency()])
@@ -133,10 +142,10 @@ async def handle_wives_draw(bot: Bot, event: Event):
         last_draw_time = db_handler.get_last_trigger_time(user_id, 'Wife')
         if last_draw_time:
             time_difference = int((datetime.now() - last_draw_time).total_seconds())  # 转换为整数秒
-            if time_difference < 300:  # 5分钟
+            if time_difference < 10:  # 5分钟
                 try:
-                    remaining_time = await format_time(300 - time_difference)
-                    await bot.send(event, f"合不合适也要先待满5分钟吧！\n还剩下{remaining_time}。", reply_message=True)
+                    remaining_time = await format_time(10 - time_difference)
+                    await bot.send(event, f"合不合适也要先待满{time_difference // 60}分钟吧！\n还剩下{remaining_time}。", reply_message=True)
                 except Exception as e:
                     await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
                 await wives_draw.finish()
@@ -254,10 +263,10 @@ async def handle_husbands_draw(bot: Bot, event: Event):
         last_draw_time = db_handler.get_last_trigger_time(user_id, 'Husband')
         if last_draw_time:
             time_difference = int((datetime.now() - last_draw_time).total_seconds())  # 转换为整数秒
-            if time_difference < 300:  # 5分钟
+            if time_difference < 10:  # 5分钟
                 try:
-                    remaining_time = await format_time(300 - time_difference)
-                    await bot.send(event, f"合不合适也要先待满5分钟吧！\n还剩下{remaining_time}。", reply_message=True)
+                    remaining_time = await format_time(10 - time_difference)
+                    await bot.send(event, f"合不合适也要先待满{time_difference // 60}分钟吧！\n还剩下{remaining_time}。", reply_message=True)
                 except Exception as e:
                     await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
                 await husbands_draw.finish()
