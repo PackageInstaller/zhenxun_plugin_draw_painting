@@ -81,7 +81,7 @@ class HelpConfirmationManager:
     async def _handle_timeout(cls, user_id: str, bot: Bot, event: Event):
         """处理超时"""
         try:
-            await asyncio.sleep(120)  # 60秒超时
+            await asyncio.sleep(120)  # 120秒超时
             confirmation = cls.get_confirmation(user_id)
             if confirmation and not confirmation.confirmed:
                 try:
