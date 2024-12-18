@@ -10,7 +10,7 @@ import asyncio
 from fuzzywuzzy import process, fuzz
 from datetime import datetime
 from nonebot.params import CommandArg     
-from nonebot import on_command, on_fullmatch, on_notice, on_regex
+from nonebot import on_command, on_fullmatch, on_notice, on_regex, get_driver
 from nonebot.typing import T_State
 from nonebot.plugin import PluginMetadata
 from nonebot.adapters.onebot.v11 import (
@@ -34,7 +34,7 @@ from zhenxun.configs.config import BotConfig
 from zhenxun.utils.enum import BlockType, PluginType
 from zhenxun.configs.utils import BaseBlock, PluginExtraData
 
-
+driver = get_driver()
 husbands_images_folder = paths.HUSBANDS_IMAGES_FOLDER
 wives_images_folder = paths.WIVES_IMAGES_FOLDER
 drop_folder = paths.DROP_FOLDER
@@ -77,6 +77,16 @@ __plugin_meta__ = PluginMetadata(
         menu_type="抽卡相关"
     ).dict(),
 )
+
+
+@driver.on_startup
+async def initialize_model():
+    """初始化时检查并下载模型"""
+    model_path = os.path.join(paths.MODEL_DIR, "model-resnet_custom_v3.pt")
+    if not os.path.exists(model_path):
+        logger.info("模型文件不存在，开始下载...")
+        asyncio.create_task(ModelManager.download_model())
+        logger.info("模型正在下载中，请稍等...")
 
 
 @help.handle()
@@ -164,7 +174,7 @@ async def handle_wives_draw(bot: Bot, event: Event):
     #         await wives_draw.finish()
 
     all_images = [img for img in os.listdir(wives_images_folder)]
-    game_names_in_library = {img.split("_")[0].lower() for img in all_images if "_" in img}  # 只考虑带有_的游戏名
+    game_names_in_library = {img.split("_")[0].lower() for img in all_images if "_" in img}  # 只考虑带有_��游戏名
 
     if game_name:
         game_name_parts = list(game_name)
@@ -550,7 +560,7 @@ async def handle_wives_rename(bot: Bot, event: Event, state: T_State):
     for name in image_name:
         message_content += f"{name}\n"
     
-    message_content += f"名字格式：\n游戏名_角色名称_皮肤名称/阶段状态等信息(没有可不写)\n举例：解神者_少姜_蓝水乐园\n不知道或者点错了的话请发送 取消"
+    message_content += f"���字格式：\n游戏名_角色名称_皮肤名称/阶段状态等信息(没有可不写)\n举例：解神者_少姜_蓝水乐园\n不知道或者点错了的话请发送 取消"
     try:
         await send_image_message(bot, event, message_content, show_image)
     except Exception as e:
@@ -687,7 +697,7 @@ async def handle_husbands_rename(bot: Bot, event: Event, state: T_State):
             try:
                 await bot.send(event, f"新名字中的游戏名与原始游戏名不一致，请保持游戏名一致。", reply_message=True)
             except Exception as e:
-                await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
+                await bot.send(event, f"发送消息时发生错��：{str(e)}", reply_message=True)
             await husbands_rename.finish()
     
         if re.match(r"^[^\s_]+(_[^\s_]+)+$", new_name):
@@ -1145,7 +1155,7 @@ async def handle_help_confirmation(bot: Bot, event: Event):
 
 @on_notice
 async def handle_help_emoji_response(bot: Bot, event: NoticeEvent):
-    """处理帮助确认的表情回应"""
+    """处理帮助确认的表情回���"""
     try:
         if event.notice_type == "group_msg_emoji_like":
             message_id = event.dict().get('message_id')
@@ -1309,7 +1319,7 @@ async def handle_vote_delete(bot: Bot, event: GroupMessageEvent, state: T_State,
         if "你抽到的老婆是" in reply_text:
             image_name = reply_text.split("你抽到的老婆是", 1)[1].split("\n")[0].strip()
             card_type = 'Wife'
-        elif "你抽到的老公是" in reply_text:
+        elif "你���到的老公是" in reply_text:
             image_name = reply_text.split("你抽到的老公是", 1)[1].split("\n")[0].strip()
             card_type = 'Husband'
 

@@ -1,5 +1,7 @@
+tqdm
 numpy
 pillow
+aiohttp
 asyncio
 pytorch
 fuzzywuzzy

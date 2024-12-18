@@ -1,7 +1,9 @@
 # 感谢 https://github.com/AUTOMATIC1111/TorchDeepDanbooru 的实现
 
+
 import os
 import io
+import aiohttp
 import platform
 import struct
 import random
@@ -29,6 +31,7 @@ from ..database import db_handler
 from zhenxun.services.log import logger
 from matplotlib.font_manager import FontProperties
 from matplotlib import pyplot as plt
+from tqdm.asyncio import tqdm
 
 husbands_images_folder = paths.HUSBANDS_IMAGES_FOLDER
 wives_images_folder = paths.WIVES_IMAGES_FOLDER
@@ -38,19 +41,82 @@ font_path = paths.FONT_PATH
 class ModelManager:
     _instance = None
     _model = None
+    _MODEL_URL = "https://github.com/AUTOMATIC1111/TorchDeepDanbooru/releases/download/v1/model-resnet_custom_v3.pt"
+    _is_downloading = False
+    _download_progress = 0
     
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(ModelManager, cls).__new__(cls)
-        return cls._instance
+    @classmethod
+    async def download_model(cls):
+        """异步下载模型文件"""
+        model_path = os.path.join(paths.MODEL_DIR, "model-resnet_custom_v3.pt")
+        os.makedirs(paths.MODEL_DIR, exist_ok=True)
+        
+        cls._is_downloading = True
+        cls._download_progress = 0
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(cls._MODEL_URL) as response:
+                    if response.status != 200:
+                        logger.error(f"下载失败: HTTP {response.status}")
+                        cls._is_downloading = False
+                        return False
+                    
+                    total_size = int(response.headers.get('content-length', 0))
+                    
+                    with open(model_path, 'wb') as f:
+                        pbar = tqdm(
+                            desc="下载模型",
+                            total=total_size,
+                            unit='iB',
+                            unit_scale=True,
+                            unit_divisor=1024
+                        )
+                        try:
+                            async for chunk in response.content.iter_chunked(1024):
+                                size = f.write(chunk)
+                                pbar.update(size)
+                                cls._download_progress = (pbar.n / total_size) * 100 if total_size > 0 else 0
+                        finally:
+                            pbar.close()
+                            
+            logger.info("模型文件下载完成")
+            cls._is_downloading = False
+            cls._download_progress = 100
+            return True
+            
+        except Exception as e:
+            logger.error(f"下载模型文件时发生错误: {e}")
+            if os.path.exists(model_path):
+                os.remove(model_path)
+            cls._is_downloading = False
+            cls._download_progress = 0
+            return False
+    
+    @classmethod
+    def is_model_ready(cls):
+        """检查模型是否准备就绪"""
+        model_path = os.path.join(paths.MODEL_DIR, "model-resnet_custom_v3.pt")
+        return os.path.exists(model_path) and not cls._is_downloading
+
+    @classmethod
+    def get_download_status(cls):
+        """获取下载状态"""
+        return cls._is_downloading, cls._download_progress
     
     @classmethod
     def get_model(cls):
+        model_path = os.path.join(paths.MODEL_DIR, "model-resnet_custom_v3.pt")
+        
         if cls._model is None:
+            if not os.path.exists(model_path):
+                if not asyncio.get_event_loop().run_until_complete(cls.download_model()):
+                    raise RuntimeError("模型文件下载失败")
+            
             cls._model = DeepDanbooruModel()
             cls._model.load_state_dict(
                 torch.load(
-                    os.path.join(paths.MODEL_DIR, "model-resnet_custom_v3.pt"), 
+                    model_path,
                     weights_only=True
                 )
             )
@@ -185,6 +251,22 @@ class CommandHandler:
     def dependency() -> None:
         async def dependency(bot: Bot, matcher, event: Event):
             user_id = str(event.get_user_id())
+            
+            if not ModelManager.is_model_ready():
+                is_downloading, progress = ModelManager.get_download_status()
+                if is_downloading:
+                    await bot.send(
+                        event, 
+                        f"模型正在下载中，请稍后再试\n当前下载进度：{progress:.1f}%", 
+                        reply_message=True
+                    )
+                else:
+                    await bot.send(
+                        event, 
+                        "模型文件不存在或下载失败，请联系管理员", 
+                        reply_message=True
+                    )
+                await matcher.finish()
             
             user_info = db_handler.get_user_info(user_id)
             if user_info and int(user_info['read_help']) == 1:

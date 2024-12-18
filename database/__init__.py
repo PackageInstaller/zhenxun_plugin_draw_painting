@@ -13,19 +13,42 @@ from typing import Optional, List, Tuple, Dict
 from contextlib import contextmanager
 from threading import Lock
 from functools import wraps
-
-
-# 配置日志
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    filename='database.log'
-)
-logger = logging.getLogger('DatabaseHandler')
+from zhenxun.services.log import logger
 
 class DatabaseError(Exception):
-    """数据库异常，再说"""
-    pass
+    """数据库操作异常基类
+    
+    属性:
+        message (str): 错误信息
+        error_code (int): 错误代码
+        details (dict): 详细错误信息
+    """
+    def __init__(self, message: str, error_code: int = None, details: dict = None):
+        self.message = message
+        self.error_code = error_code or 5000  # 默认错误码
+        self.details = details or {}
+        super().__init__(self.message)
+
+    def __str__(self):
+        error_msg = f"数据库错误 [{self.error_code}]: {self.message}"
+        if self.details:
+            error_msg += f"\n详细信息: {self.details}"
+        return error_msg
+
+class ConnectionError(DatabaseError):
+    """数据库连接相关错误"""
+    def __init__(self, message: str, details: dict = None):
+        super().__init__(message, 5001, details)
+
+class QueryError(DatabaseError):
+    """数据库查询相关错误"""
+    def __init__(self, message: str, details: dict = None):
+        super().__init__(message, 5002, details)
+
+class TransactionError(DatabaseError):
+    """数据库事务相关错误"""
+    def __init__(self, message: str, details: dict = None):
+        super().__init__(message, 5003, details)
 
 class ConnectionPool:
     """数据库连接池"""
@@ -45,7 +68,10 @@ class ConnectionPool:
         try:
             return self.connections.get(timeout=5)
         except queue.Empty:
-            raise DatabaseError("无法获取数据库连接，连接池已满")
+            raise ConnectionError(
+                "无法获取数据库连接，连接池已满",
+                {"最大连接数": self.max_connections}
+            )
 
     def return_connection(self, connection: sqlite3.Connection):
         self.connections.put(connection)
@@ -73,7 +99,7 @@ class DatabaseHandler:
         except Exception as e:
             connection.rollback()
             logger.error(f"Database error: {str(e)}")
-            raise DatabaseError(f"数据库操作失败: {str(e)}")
+            raise QueryError(f"数据库操作失败", {"错误信息": str(e)})
         finally:
             cursor.close()
             self.pool.return_connection(connection)
