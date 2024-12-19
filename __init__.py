@@ -65,7 +65,7 @@ __plugin_meta__ = PluginMetadata(
     我老婆/老公 [查看所有立绘]
     老婆/老公改名 [修改单张立绘名称]
     老婆/老公概率 ?[数量参数可选，默认全部] [查看各游戏占比]
-    这是男的/女的 [抽老婆抽到男的的时候可以用，另一个同理，只能处理自��的立绘]
+    这是男的/女的 [抽老婆抽到男的的时候可以用，另一个同理，只能处理自己的立绘]
     投票删除 [回复抽到的图片，非男非女时可以使用]
     请注意，如果出现乱用指令的情况，将会被永久封禁。
     """.strip(),
@@ -126,7 +126,7 @@ async def handle_help(bot: Bot, event: Event):
     buf.seek(0)
     
     if int(db_handler.get_user_info(user_id)['read_help']) == 0:
-        warning_message = "现在您可以正常使用所有指令了。\n请注意，如果出现乱���指令的情况，将会被永久封禁。"
+        warning_message = "现在您可以正常使用所有指令了。\n请注意，如果出现乱用指令的情况，将会被永久封禁。"
     else:
         warning_message = ""
     message = MessageSegment.image(buf) + MessageSegment.text(warning_message)
