@@ -1,8 +1,7 @@
 # 感谢 https://github.com/AUTOMATIC1111/TorchDeepDanbooru 的实现
-
-
 import os
 import io
+import hashlib
 import aiohttp
 import platform
 import struct
@@ -42,62 +41,109 @@ class ModelManager:
     _instance = None
     _model = None
     _MODEL_URL = "https://github.com/AUTOMATIC1111/TorchDeepDanbooru/releases/download/v1/model-resnet_custom_v3.pt"
+    _MODEL_SHA256 = "3841542cda4dd037da12a565e854b3347bb2eec8fbcd95ea3941b2c68990a355"
     _is_downloading = False
     _download_progress = 0
+    _max_retries = 3
+    
+    @classmethod
+    def verify_model(cls, file_path: str) -> bool:
+        """验证模型文件的SHA256哈希值"""
+        if not os.path.exists(file_path):
+            return False
+            
+        try:
+            sha256_hash = hashlib.sha256()
+            with open(file_path, "rb") as f:
+                for byte_block in iter(lambda: f.read(4096), b""):
+                    sha256_hash.update(byte_block)
+            return sha256_hash.hexdigest() == cls._MODEL_SHA256
+        except Exception as e:
+            logger.error(f"验证模型文件时发生错误: {e}")
+            return False
     
     @classmethod
     async def download_model(cls):
-        """异步下载模型文件"""
+        """异步下载模型文件，支持断点续传和重试"""
         model_path = os.path.join(paths.MODEL_DIR, "model-resnet_custom_v3.pt")
+        temp_path = f"{model_path}.temp"
         os.makedirs(paths.MODEL_DIR, exist_ok=True)
         
         cls._is_downloading = True
         cls._download_progress = 0
+        retry_count = 0
         
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(cls._MODEL_URL) as response:
-                    if response.status != 200:
-                        logger.error(f"下载失败: HTTP {response.status}")
-                        cls._is_downloading = False
-                        return False
+        if os.path.exists(temp_path):
+            initial_size = os.path.getsize(temp_path)
+            logger.info(f"找到临时文件，已下载 {initial_size} 字节")
+        else:
+            initial_size = 0
+        
+        while retry_count < cls._max_retries:
+            try:
+                headers = {'Range': f'bytes={initial_size}-'} if initial_size > 0 else {}
+                
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(cls._MODEL_URL, headers=headers) as response:
+                        if response.status not in [200, 206]:
+                            logger.error(f"下载失败: HTTP {response.status}")
+                            retry_count += 1
+                            await asyncio.sleep(1)
+                            continue
+                        
+                        total_size = int(response.headers.get('content-length', 0)) + initial_size
+                        
+                        with open(temp_path, 'ab' if initial_size > 0 else 'wb') as f:
+                            pbar = tqdm(
+                                desc=f"下载模型 (尝试 {retry_count + 1}/{cls._max_retries})",
+                                initial=initial_size,
+                                total=total_size,
+                                unit='iB',
+                                unit_scale=True,
+                                unit_divisor=1024
+                            )
+                            try:
+                                async for chunk in response.content.iter_chunked(1024):
+                                    size = f.write(chunk)
+                                    pbar.update(size)
+                                    cls._download_progress = (pbar.n / total_size) * 100 if total_size > 0 else 0
+                            finally:
+                                pbar.close()
+                
+                if cls.verify_model(temp_path):
+                    if os.path.exists(model_path):
+                        os.remove(model_path)
+                    os.rename(temp_path, model_path)
+                    logger.info("模型文件下载完成并验证通过")
+                    cls._is_downloading = False
+                    cls._download_progress = 100
+                    return True
+                else:
+                    logger.error("模型文件验证失败，准备重试")
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+                    initial_size = 0
+                    retry_count += 1
+                    continue
                     
-                    total_size = int(response.headers.get('content-length', 0))
-                    
-                    with open(model_path, 'wb') as f:
-                        pbar = tqdm(
-                            desc="下载模型",
-                            total=total_size,
-                            unit='iB',
-                            unit_scale=True,
-                            unit_divisor=1024
-                        )
-                        try:
-                            async for chunk in response.content.iter_chunked(1024):
-                                size = f.write(chunk)
-                                pbar.update(size)
-                                cls._download_progress = (pbar.n / total_size) * 100 if total_size > 0 else 0
-                        finally:
-                            pbar.close()
-                            
-            logger.info("模型文件下载完成")
-            cls._is_downloading = False
-            cls._download_progress = 100
-            return True
-            
-        except Exception as e:
-            logger.error(f"下载模型文件时发生错误: {e}")
-            if os.path.exists(model_path):
-                os.remove(model_path)
-            cls._is_downloading = False
-            cls._download_progress = 0
-            return False
+            except Exception as e:
+                logger.error(f"下载模型文件时发生错误: {e}")
+                retry_count += 1
+                if os.path.exists(temp_path):
+                    initial_size = os.path.getsize(temp_path)
+                await asyncio.sleep(1)
+        
+        cls._is_downloading = False
+        cls._download_progress = 0
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        return False
     
     @classmethod
     def is_model_ready(cls):
         """检查模型是否准备就绪"""
         model_path = os.path.join(paths.MODEL_DIR, "model-resnet_custom_v3.pt")
-        return os.path.exists(model_path) and not cls._is_downloading
+        return os.path.exists(model_path) and not cls._is_downloading and cls.verify_model(model_path)
 
     @classmethod
     def get_download_status(cls):

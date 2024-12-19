@@ -65,7 +65,7 @@ __plugin_meta__ = PluginMetadata(
     我老婆/老公 [查看所有立绘]
     老婆/老公改名 [修改单张立绘名称]
     老婆/老公概率 ?[数量参数可选，默认全部] [查看各游戏占比]
-    这是男的/女的 [抽老婆抽到男的的时候可以用，另一个同理，只能处理自己的立绘]
+    这是男的/女的 [抽老婆抽到男的的时候可以用，另一个同理，只能处理自��的立绘]
     投票删除 [回复抽到的图片，非男非女时可以使用]
     请注意，如果出现乱用指令的情况，将会被永久封禁。
     """.strip(),
@@ -83,10 +83,19 @@ __plugin_meta__ = PluginMetadata(
 async def initialize_model():
     """初始化时检查并下载模型"""
     model_path = os.path.join(paths.MODEL_DIR, "model-resnet_custom_v3.pt")
-    if not os.path.exists(model_path):
-        logger.info("模型文件不存在，开始下载...")
+    temp_path = f"{model_path}.temp"
+    
+    if not ModelManager.verify_model(model_path):
+        if os.path.exists(model_path):
+            logger.info("现有模型文件验证失败，准备重新下载...")
+            os.remove(model_path)
+        elif os.path.exists(temp_path):
+            logger.info("发现未完成的下载，将继续下载...")
+        else:
+            logger.info("模型文件不存在，开始下载...")
+            
         asyncio.create_task(ModelManager.download_model())
-        logger.info("模型正在下载中，请稍等...")
+        logger.info("模型下载已在后台启动")
 
 
 @help.handle()
@@ -117,7 +126,7 @@ async def handle_help(bot: Bot, event: Event):
     buf.seek(0)
     
     if int(db_handler.get_user_info(user_id)['read_help']) == 0:
-        warning_message = "现在您可以正常使用所有指令了。\n请注意，如果出现乱用指令的情况，将会被永久封禁。"
+        warning_message = "现在您可以正常使用所有指令了。\n请注意，如果出现乱���指令的情况，将会被永久封禁。"
     else:
         warning_message = ""
     message = MessageSegment.image(buf) + MessageSegment.text(warning_message)
@@ -174,7 +183,7 @@ async def handle_wives_draw(bot: Bot, event: Event):
     #         await wives_draw.finish()
 
     all_images = [img for img in os.listdir(wives_images_folder)]
-    game_names_in_library = {img.split("_")[0].lower() for img in all_images if "_" in img}  # 只考虑带有_��游戏名
+    game_names_in_library = {img.split("_")[0].lower() for img in all_images if "_" in img}  # 只考虑带有_的游戏名
 
     if game_name:
         game_name_parts = list(game_name)
@@ -285,7 +294,7 @@ async def handle_husbands_draw(bot: Bot, event: Event):
     #     try:
     #         await bot.send(event, f"你指定了 {game_name} 的老公呢，正在为你抽取...", reply_message=False)
     #     except Exception as e:
-    #         await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
+    #         await bot.send(event, f"发送消息时发生错误���{str(e)}", reply_message=True)
     #         await husbands_draw.finish()
     # else:
     #     try:
@@ -560,7 +569,7 @@ async def handle_wives_rename(bot: Bot, event: Event, state: T_State):
     for name in image_name:
         message_content += f"{name}\n"
     
-    message_content += f"���字格式：\n游戏名_角色名称_皮肤名称/阶段状态等信息(没有可不写)\n举例：解神者_少姜_蓝水乐园\n不知道或者点错了的话请发送 取消"
+    message_content += f"字格式：\n游戏名_角色名称_皮肤名称/阶段状态等信息(没有可不写)\n举例：解神者_少姜_蓝水乐园\n不知道或者点错了的话请发送 取消"
     try:
         await send_image_message(bot, event, message_content, show_image)
     except Exception as e:
@@ -697,7 +706,7 @@ async def handle_husbands_rename(bot: Bot, event: Event, state: T_State):
             try:
                 await bot.send(event, f"新名字中的游戏名与原始游戏名不一致，请保持游戏名一致。", reply_message=True)
             except Exception as e:
-                await bot.send(event, f"发送消息时发生错��：{str(e)}", reply_message=True)
+                await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
             await husbands_rename.finish()
     
         if re.match(r"^[^\s_]+(_[^\s_]+)+$", new_name):
@@ -1146,7 +1155,7 @@ async def handle_help_confirmation(bot: Bot, event: Event):
         
     except Exception as e:
         logger.error(f"处理帮助确认时发生错误: {e}")
-        await bot.send(event, "处理帮助确认时发生错误，请稍后重试。")
+        await bot.send(event, "处理帮助确认时发生错误，���稍后重试。")
     finally:
         if 'buf' in locals():
             buf.close()
@@ -1155,7 +1164,7 @@ async def handle_help_confirmation(bot: Bot, event: Event):
 
 @on_notice
 async def handle_help_emoji_response(bot: Bot, event: NoticeEvent):
-    """处理帮助确认的表情回���"""
+    """处理帮助确认的表情响应"""
     try:
         if event.notice_type == "group_msg_emoji_like":
             message_id = event.dict().get('message_id')
@@ -1289,7 +1298,7 @@ async def finalize_vote(bot: Bot, vote_data, message_id, event, early_terminatio
                     deleted_images.append(os.path.splitext(img)[0])
                 except Exception as e:
                     failed_images.append(img)
-                    await bot.send(event, f"删除图片 {img} 时发生错误：{str(e)}", reply_message=True)
+                    await bot.send(event, f"删除图片 {img} 时发生���误：{str(e)}", reply_message=True)
 
 
             db_record = db_handler.get_card_name(user_id)
@@ -1319,7 +1328,7 @@ async def handle_vote_delete(bot: Bot, event: GroupMessageEvent, state: T_State,
         if "你抽到的老婆是" in reply_text:
             image_name = reply_text.split("你抽到的老婆是", 1)[1].split("\n")[0].strip()
             card_type = 'Wife'
-        elif "你���到的老公是" in reply_text:
+        elif "你抽到的老公是" in reply_text:
             image_name = reply_text.split("你抽到的老公是", 1)[1].split("\n")[0].strip()
             card_type = 'Husband'
 
