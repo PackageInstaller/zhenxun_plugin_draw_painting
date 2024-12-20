@@ -25,7 +25,7 @@ from matplotlib.font_manager import FontProperties
 from matplotlib import pyplot as plt
 from .config import paths
 from .database import db_handler
-from .utils.functions import *
+from .utils import *
 from typing import Dict
 from zhenxun.utils.enum import PluginType
 from zhenxun.configs.utils import PluginExtraData

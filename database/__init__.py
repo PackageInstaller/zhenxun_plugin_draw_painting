@@ -5,7 +5,6 @@ except ImportError:
 import os
 import sqlite3
 import atexit
-import logging
 import queue
 import asyncio
 from datetime import datetime
