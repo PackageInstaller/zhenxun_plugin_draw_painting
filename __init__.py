@@ -294,7 +294,7 @@ async def handle_husbands_draw(bot: Bot, event: Event):
     #     try:
     #         await bot.send(event, f"你指定了 {game_name} 的老公呢，正在为你抽取...", reply_message=False)
     #     except Exception as e:
-    #         await bot.send(event, f"发送消息时发生错误���{str(e)}", reply_message=True)
+    #         await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
     #         await husbands_draw.finish()
     # else:
     #     try:
@@ -1155,7 +1155,7 @@ async def handle_help_confirmation(bot: Bot, event: Event):
         
     except Exception as e:
         logger.error(f"处理帮助确认时发生错误: {e}")
-        await bot.send(event, "处理帮助确认时发生错误，���稍后重试。")
+        await bot.send(event, "处理帮助确认时发生错误，请稍后重试。")
     finally:
         if 'buf' in locals():
             buf.close()
@@ -1298,7 +1298,7 @@ async def finalize_vote(bot: Bot, vote_data, message_id, event, early_terminatio
                     deleted_images.append(os.path.splitext(img)[0])
                 except Exception as e:
                     failed_images.append(img)
-                    await bot.send(event, f"删除图片 {img} 时发生���误：{str(e)}", reply_message=True)
+                    await bot.send(event, f"删除图片 {img} 时发生错误：{str(e)}", reply_message=True)
 
 
             db_record = db_handler.get_card_name(user_id)

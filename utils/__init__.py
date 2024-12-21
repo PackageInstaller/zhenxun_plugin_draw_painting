@@ -641,7 +641,7 @@ async def is_exact_match(img_name: str, stored_name: str) -> bool:
 
 async def generate_and_send_stats(bot: Bot, event: Event, game_stats: Dict[str, Dict], limit: int):
     """
-    生成并发送统计图表
+    生成统计图表并通过合并转发发送
     
     Args:
         bot: Bot实例
@@ -653,42 +653,64 @@ async def generate_and_send_stats(bot: Bot, event: Event, game_stats: Dict[str, 
     sorted_games = sorted(game_stats.items(), key=lambda x: x[1]["count"], reverse=True)
     display_games = sorted_games[:limit]
     
-    text_lines = []
-    max_length = 0
+    BATCH_SIZE = 10
+    total_batches = (len(display_games) + BATCH_SIZE - 1) // BATCH_SIZE
     
-    for rank, (game_name, stats) in enumerate(display_games, 1):
-        line = (
-            f"第 {rank} 位: {game_name}\n"
-            f"    占比: {stats['percentage']:.2f}%\n"
-            f"    角色数: {stats['char_count']}\n"
-            f"    平均皮肤数: {stats['avg_skins']:.1f}"
-        )
-        text_lines.append(line)
-        max_length = max(max_length, max(len(l) for l in line.split('\n')))
+    forward_messages = []
+    
+    for batch_num in range(total_batches):
+        start_idx = batch_num * BATCH_SIZE
+        end_idx = min((batch_num + 1) * BATCH_SIZE, len(display_games))
+        batch_games = display_games[start_idx:end_idx]
+        
+        text_lines = []
+        max_length = 0
+        
+        for rank, (game_name, stats) in enumerate(batch_games, start_idx + 1):
+            line = (
+                f"第 {rank} 位: {game_name}\n"
+                f"    占比: {stats['percentage']:.2f}%\n"
+                f"    角色数: {stats['char_count']}\n"
+                f"    平均皮肤数: {stats['avg_skins']:.1f}"
+            )
+            text_lines.append(line)
+            max_length = max(max_length, max(len(l) for l in line.split('\n')))
 
-    # 设置图表大小
-    fig_width = max_length * 0.15
-    fig_height = max(len(display_games) * 0.6, 1)
-    
-    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-    ax.axis('off')
-    fig.patch.set_facecolor('white')
-    
-    # 添加文本
-    ax.text(0, 0.5, "\n\n".join(text_lines), 
-            fontsize=12, ha='left', va='center', 
-            fontproperties=font_prop,
-            linespacing=1.5)
+        fig_width = max_length * 0.15
+        fig_height = max(len(batch_games) * 0.6, 1)
+        
+        fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+        ax.axis('off')
+        fig.patch.set_facecolor('white')
+        
+        ax.text(0, 0.5, "\n\n".join(text_lines), 
+                fontsize=12, ha='left', va='center', 
+                fontproperties=font_prop,
+                linespacing=1.5)
 
-    # 保存并发送图片
-    buf = io.BytesIO()
-    try:
-        plt.savefig(buf, format='png', bbox_inches='tight', transparent=False, dpi=120)
-        buf.seek(0)
-        await bot.send(event, MessageSegment.image(buf), reply_message=True)
-    finally:
-        buf.close()
-        plt.close(fig)
+        buf = io.BytesIO()
+        try:
+            plt.savefig(buf, format='png', bbox_inches='tight', transparent=False, dpi=120)
+            buf.seek(0)
+            
+            batch_info = f"第 {batch_num + 1}/{total_batches} 页"
+            forward_messages.append({
+                "type": "node",
+                "data": {
+                    "name": "老婆统计",
+                    "uin": bot.self_id,
+                    "content": MessageSegment.image(buf) + MessageSegment.text(f"\n{batch_info}")
+                }
+            })
+            
+        finally:
+            buf.close()
+            plt.close(fig)
+    
+    await bot.send_group_forward_msg(
+        group_id=event.group_id,
+        messages=forward_messages
+    )
 
 def calculate_game_stats(images: List[str]) -> Dict[str, Dict[str, Union[int, float]]]:
     """
