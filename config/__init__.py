@@ -12,7 +12,7 @@ class PathConfig:
     HUSBANDS_IMAGES_FOLDER = os.path.join(PLUGIN_DIR, "husbands")
     WIVES_IMAGES_FOLDER = os.path.join(PLUGIN_DIR, "wives")
     DROP_FOLDER = os.path.join(PLUGIN_DIR, "drop")
-
+    GAME_ALIASES_PATH = os.path.join(PLUGIN_DIR, "utils", "game_aliases.yaml")
 class DeviceConfig:
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

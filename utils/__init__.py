@@ -1,6 +1,7 @@
 # 感谢 https://github.com/AUTOMATIC1111/TorchDeepDanbooru 的实现
 import os
 import io
+import yaml
 import hashlib
 import aiohttp
 import platform
@@ -31,12 +32,13 @@ from zhenxun.services.log import logger
 from matplotlib.font_manager import FontProperties
 from matplotlib import pyplot as plt
 from tqdm.asyncio import tqdm
+from dataclasses import dataclass
 
 husbands_images_folder = paths.HUSBANDS_IMAGES_FOLDER
 wives_images_folder = paths.WIVES_IMAGES_FOLDER
 drop_folder = paths.DROP_FOLDER
 font_path = paths.FONT_PATH
-
+game_aliases_path = paths.GAME_ALIASES_PATH
 class ModelManager:
     _instance = None
     _model = None
@@ -95,7 +97,7 @@ class ModelManager:
                         
                         with open(temp_path, 'ab' if initial_size > 0 else 'wb') as f:
                             pbar = tqdm(
-                                desc=f"下载模型 (尝试 {retry_count + 1}/{cls._max_retries})",
+                                desc=f"下载模型 ({retry_count + 1}/{cls._max_retries})",
                                 initial=initial_size,
                                 total=total_size,
                                 unit='iB',
@@ -332,35 +334,82 @@ class CommandHandler:
         return Depends(dependency)
 
 
-# 游戏别名
-GAME_ALIASES: Dict[str, List[str]] = {
-    "崩坏2": ["崩坏二", "崩2", "崩二"],
-    "崩坏3": ["崩坏三", "崩3", "崩三"],
-    "原神": ["genshinimpact", "ys", "原神"],
-    "明日方舟": ["arknights", "方舟"],
-    "碧蓝航线": ["azurlane", "blhx"],
-    "碧蓝幻想": ["gbf", "肝报废"],
-    "少女前线": ["sgb", "少前"],
-    "少女前线2：追放": ["sgb2", "少前2", "少前追放", "追放", "少女前线二"],
-    "歧路旅人: 大陆的霸者": ["大坝", "大霸"],
-    "崩坏：星穹铁道": ["星铁", "崩铁"],
-    "少女前线：云图计划": ["云图"],
-    "玛娜希斯回响": ["麻辣鸡丝"],
-    "边狱公司": ["084", "宝宝巴士", "鳊鱼公司", "鳊鱼巴士", "边狱巴士"],
-    "千年之旅": ["千年"],
-    "为了谁的炼金术师": ["为谁而炼金"],
-    "战舰少女R": ["舰R"],
-    "绯红神约": ["绯色回响", "绯色"],
-    "ReverseBluexRe-birthEnd": ["rxr", "反向蓝"]
-}
 
-# 别名游戏名
+@dataclass
+class GameInfo:
+    """游戏信息类"""
+    name: str
+    aliases: List[str]
+    short_name: Optional[str] = None
+    en_name: Optional[str] = None
+
+class GameAliasManager:
+    """游戏别名管理器"""
+    def __init__(self):
+        self.games_config: List[GameInfo] = []
+        self.game_aliases: Dict[str, List[str]] = {}
+        self._name_mapping: Dict[str, str] = {}
+        self._load_config()
+        
+    def _load_config(self):
+        """加载游戏配置"""
+        
+        try:
+            with open(paths.GAME_ALIASES_PATH, 'r', encoding='utf-8') as f:
+                data = yaml.safe_load(f)
+            
+            self.games_config = [
+                GameInfo(**game_data) 
+                for game_data in data['games']
+            ]
+            
+            self.game_aliases = {
+                game.name: game.aliases 
+                for game in self.games_config
+            }
+            
+            for game in self.games_config:
+                self._name_mapping[game.name.lower()] = game.name
+                for alias in game.aliases:
+                    self._name_mapping[alias.lower()] = game.name
+                if game.en_name:
+                    self._name_mapping[game.en_name.lower()] = game.name
+                if game.short_name:
+                    self._name_mapping[game.short_name.lower()] = game.name
+                    
+        except Exception as e:
+            logger.error(f"加载游戏别名配置失败: {e}")
+            self.games_config = []
+            self.game_aliases = {}
+            self._name_mapping = {}
+    
+    async def get_game_name_from_alias(self, alias: str) -> str:
+        """从别名获取标准游戏名称"""
+        return self._name_mapping.get(alias.lower(), alias)
+    
+    def reload_config(self):
+        """重新加载配置"""
+        self.games_config.clear()
+        self.game_aliases.clear()
+        self._name_mapping.clear()
+        self._load_config()
+
+    def get_game_info(self, name: str) -> Optional[GameInfo]:
+        """获取游戏完整信息"""
+        std_name = self._name_mapping.get(name.lower())
+        if std_name:
+            return next(
+                (game for game in self.games_config if game.name == std_name),
+                None
+            )
+        return None
+
+game_alias_manager = GameAliasManager()
+
+
 async def get_game_name_from_alias(alias: str) -> str:
-    alias = alias.lower()
-    for game, aliases in GAME_ALIASES.items():
-        if alias in [a.lower() for a in aliases]:
-            return game
-    return alias
+    """返回游戏名"""
+    return await game_alias_manager.get_game_name_from_alias(alias)
 
 
 async def determine_gender(img_path):

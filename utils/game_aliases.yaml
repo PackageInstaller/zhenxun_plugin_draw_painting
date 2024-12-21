@@ -1,0 +1,108 @@
+games:
+  - name: 崩坏2
+    aliases: 
+      - 崩坏二
+      - 崩2
+      - 崩二
+    en_name: Honkai Impact 2
+    
+  - name: 崩坏3
+    aliases:
+      - 崩坏三
+      - 崩3
+      - 崩三
+    en_name: Honkai Impact 3rd
+    
+  - name: 原神
+    aliases:
+      - ys
+    en_name: Genshin Impact
+    
+  - name: 明日方舟
+    aliases:
+      - 方舟
+    en_name: Arknights
+    
+  - name: 碧蓝航线
+    aliases:
+      - 碧蓝
+      - blhx
+    en_name: Azur Lane
+
+  - name: 碧蓝幻想
+    aliases:
+      - gbf
+      - 肝报废
+    en_name: Granblue Fantasy
+    
+  - name: 少女前线
+    aliases:
+      - 少前
+    en_name: Girls' Frontline
+  
+  - name: 少女前线2：追放
+    aliases:
+      - 少前2
+      - 少前追放
+      - 追放
+      - 少女前线二
+    en_name: Girls' Frontline 2 Exilium
+  
+  - name: "歧路旅人: 大陆的霸者"
+    aliases:
+      - 大坝
+      - 大霸
+      - 齐鲁女人
+    en_name: "OCTOPATH TRAVELER: Champions of the Continent"
+
+  - name: "崩坏：星穹铁道"
+    aliases:
+      - 星铁
+      - 崩铁
+    en_name: "Honkai: Star Rail"
+  
+  - name: 少女前线：云图计划
+    aliases:
+      - 云图
+    en_name: Neural Cloud
+  
+  - name: 玛娜希斯回响
+    aliases:
+      - 麻辣鸡丝
+    en_name: None
+  
+  - name: 边狱公司
+    aliases:
+      - 084
+      - 宝宝巴士
+      - 鳊鱼公司
+      - 鳊鱼巴士
+      - 边狱巴士
+    en_name: Limbus Company
+
+  - name: 千年之旅
+    aliases:
+      - 千年
+    en_name: Millennium_Tour_ELF
+  
+  - name: 为了谁的炼金术师
+    aliases:
+      - 为谁而炼金
+    en_name: None
+
+  - name: 战舰少女R
+    aliases:
+      - 舰R
+    en_name: None
+
+  - name: 绯红神约
+    aliases:
+      - 绯色回响
+      - 绯色
+    en_name: Echocalypse
+
+  - name: ReverseBluexRe-birthEnd
+    aliases:
+      - rxr
+      - 反向蓝
+    en_name: ReverseBluexRe-birthEnd
