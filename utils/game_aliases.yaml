@@ -69,7 +69,6 @@ games:
   - name: 玛娜希斯回响
     aliases:
       - 麻辣鸡丝
-    en_name: None
   
   - name: 边狱公司
     aliases:
@@ -88,12 +87,10 @@ games:
   - name: 为了谁的炼金术师
     aliases:
       - 为谁而炼金
-    en_name: None
 
   - name: 战舰少女R
     aliases:
       - 舰R
-    en_name: None
 
   - name: 绯红神约
     aliases:

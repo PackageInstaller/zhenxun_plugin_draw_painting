@@ -6,5 +6,4 @@ asyncio
 pytorch
 fuzzywuzzy
 matplotlib
-matplotlib
 python-Levenshtein
