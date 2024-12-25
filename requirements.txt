@@ -1,4 +1,5 @@
 tqdm
+rich
 numpy
 pillow
 aiohttp

@@ -31,7 +31,15 @@ from ..database import db_handler
 from zhenxun.services.log import logger
 from matplotlib.font_manager import FontProperties
 from matplotlib import pyplot as plt
-from tqdm.asyncio import tqdm
+from rich.progress import (
+    Progress,
+    TextColumn,
+    BarColumn,
+    TaskProgressColumn,
+    TimeRemainingColumn,
+    TimeElapsedColumn,
+    SpinnerColumn
+)
 from dataclasses import dataclass
 
 husbands_images_folder = paths.HUSBANDS_IMAGES_FOLDER
@@ -77,9 +85,23 @@ class ModelManager:
         
         if os.path.exists(temp_path):
             initial_size = os.path.getsize(temp_path)
-            logger.info(f"找到临时文件，已下载 {initial_size} 字节")
+            logger.info(f"找到临时文件，已下载 {initial_size / 1024 / 1024:.2f} MiB")
         else:
             initial_size = 0
+        
+        progress = Progress(
+            SpinnerColumn(),
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            TextColumn("[bold green]{task.completed:.2f}"),
+            TextColumn("/"),
+            TextColumn("[bold]{task.total:.2f} MiB"),
+            TextColumn("已用时间: "),
+            TimeElapsedColumn(),
+            TextColumn("预计剩余: "),
+            TimeRemainingColumn(),
+        )
         
         while retry_count < cls._max_retries:
             try:
@@ -94,23 +116,25 @@ class ModelManager:
                             continue
                         
                         total_size = int(response.headers.get('content-length', 0)) + initial_size
+                        total_size_mib = total_size / 1024 / 1024  # 转换为 MiB
+                        initial_size_mib = initial_size / 1024 / 1024  # 转换为 MiB
                         
                         with open(temp_path, 'ab' if initial_size > 0 else 'wb') as f:
-                            pbar = tqdm(
-                                desc=f"下载模型 ({retry_count + 1}/{cls._max_retries})",
-                                initial=initial_size,
-                                total=total_size,
-                                unit='iB',
-                                unit_scale=True,
-                                unit_divisor=1024
-                            )
-                            try:
-                                async for chunk in response.content.iter_chunked(1024):
-                                    size = f.write(chunk)
-                                    pbar.update(size)
-                                    cls._download_progress = (pbar.n / total_size) * 100 if total_size > 0 else 0
-                            finally:
-                                pbar.close()
+                            with progress:
+                                task = progress.add_task(
+                                    f"下载模型 ({retry_count + 1}/{cls._max_retries})", 
+                                    total=total_size_mib,
+                                    completed=initial_size_mib
+                                )
+                                try:
+                                    async for chunk in response.content.iter_chunked(1024):
+                                        size = f.write(chunk)
+                                        # 转换增量为 MiB
+                                        progress.update(task, advance=size/1024/1024)
+                                        cls._download_progress = (progress.tasks[0].completed / total_size_mib) * 100 if total_size > 0 else 0
+                                except Exception as e:
+                                    logger.error(f"下载过程中发生错误: {e}")
+                                    raise
                 
                 if cls.verify_model(temp_path):
                     if os.path.exists(model_path):
