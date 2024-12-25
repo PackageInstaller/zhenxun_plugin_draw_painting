@@ -3,7 +3,7 @@ numpy
 pillow
 aiohttp
 asyncio
-pytorch
+torch
 fuzzywuzzy
 matplotlib
 python-Levenshtein
