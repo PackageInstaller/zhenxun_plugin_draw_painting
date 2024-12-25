@@ -56,7 +56,7 @@ vote_delete = on_command("投票删除", priority=5)
 help = on_fullmatch("帮助抽游戏立绘", priority=5)
 
 __plugin_meta__ = PluginMetadata(
-    name="抽游戏立绘",
+    name="游戏立绘抽卡",
     description="从本地图片库中随机抽取游戏人物立绘",
     usage="""
     抽取老婆/老公
