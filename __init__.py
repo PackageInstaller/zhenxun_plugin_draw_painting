@@ -23,8 +23,8 @@ from nonebot.adapters.onebot.v11 import (
 )
 from matplotlib.font_manager import FontProperties
 from matplotlib import pyplot as plt
-from .config import paths
-from .database import db_handler
+from .config import *
+from .database import *
 from .utils import *
 from typing import Dict
 from zhenxun.utils.enum import PluginType
@@ -80,17 +80,22 @@ __plugin_meta__ = PluginMetadata(
 
 
 @driver.on_startup
-async def initialize_model():
-    """初始化时检查并下载模型"""
+async def initialize():
+    """初始化"""
+
+    # 确保目录存在
+    ensure_directories()
+
+    # 下载模型
     model_path = os.path.join(paths.MODEL_DIR, "model-resnet_custom_v3.pt")
     temp_path = f"{model_path}.temp"
     
     if not ModelManager.verify_model(model_path):
         if os.path.exists(model_path):
-            logger.info("现有模型文件验证失败，准备重新下载...")
+            logger.error("现有模型文件验证失败，准备重新下载...")
             os.remove(model_path)
         elif os.path.exists(temp_path):
-            logger.info("发现未完成的下载，将继续下载...")
+            logger.warning("发现未完成的下载，将继续下载...")
         else:
             logger.info("模型文件不存在，开始下载...")
             
