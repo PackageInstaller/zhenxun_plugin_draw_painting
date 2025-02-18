@@ -321,7 +321,7 @@ help_manager = HelpConfirmationManager()
 class CommandHandler:
     """命令处理类"""
     def dependency() -> None:
-        async def dependency(bot: Bot, matcher, event: Event):
+        async def dependency(bot: Bot, matcher, event: Event) -> bool:
             user_id = str(event.get_user_id())
             
             if not ModelManager.is_model_ready():
@@ -339,22 +339,26 @@ class CommandHandler:
                         reply_message=True
                     )
                 await matcher.finish()
+                return False
             
             user_info = db_handler.get_user_info(user_id)
             if user_info and int(user_info['read_help']) == 1:
-                return
+                return True
             
             if await help_manager.is_processing(user_id, db_handler):
                 if matcher.state.get("_command_name_") == "help":
-                    return
+                    return True
                 await bot.send(event, "请先同意霸王条款再使用其他指令。", reply_message=True)
                 await matcher.finish()
+                return False
             
             if int(user_info['read_help']) == 0:
                 from .. import handle_help_confirmation
                 await handle_help_confirmation(bot, event)
                 await matcher.finish()
-                
+                return False
+            return True
+
         return Depends(dependency)
 
 

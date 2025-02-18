@@ -34,6 +34,9 @@ from zhenxun.configs.config import BotConfig
 from zhenxun.utils.enum import BlockType, PluginType
 from zhenxun.configs.utils import BaseBlock, PluginExtraData
 
+# 投票状态
+ongoing_votes: Dict[str, Dict] = {}
+
 driver = get_driver()
 husbands_images_folder = paths.HUSBANDS_IMAGES_FOLDER
 wives_images_folder = paths.WIVES_IMAGES_FOLDER
@@ -162,17 +165,17 @@ async def handle_wives_draw(bot: Bot, event: Event):
         else:
             game_name = None
     
-    if user_id not in bot.config.superusers: # 普通用户 event.sender.role == "admin" "owner"
-        last_draw_time = db_handler.get_last_trigger_time(user_id, 'Wife')
-        if last_draw_time:
-            time_difference = int((datetime.now() - last_draw_time).total_seconds())  # 转换为整数秒
-            if time_difference < 10:  # 5分钟
-                try:
-                    remaining_time = await format_time(10 - time_difference)
-                    await bot.send(event, f"合不合适也要先待满10秒吧！\n还剩下{remaining_time}。", reply_message=True)
-                except Exception as e:
-                    await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
-                await wives_draw.finish()
+    # if user_id not in bot.config.superusers: # 普通用户 event.sender.role == "admin" "owner"
+    #     last_draw_time = db_handler.get_last_trigger_time(user_id, 'Wife')
+    #     if last_draw_time:
+    #         time_difference = int((datetime.now() - last_draw_time).total_seconds())  # 转换为整数秒
+    #         if time_difference < 600:  # 5分钟
+    #             try:
+    #                 remaining_time = await format_time(600 - time_difference)
+    #                 await bot.send(event, f"合不合适也要先待满600秒吧！\n还剩下{remaining_time}。", reply_message=True)
+    #             except Exception as e:
+    #                 await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
+    #             await wives_draw.finish()
 
     # if game_name:
     #     try:
@@ -283,17 +286,17 @@ async def handle_husbands_draw(bot: Bot, event: Event):
         else:
             game_name = None
 
-    if user_id not in bot.config.superusers: # 普通用户
-        last_draw_time = db_handler.get_last_trigger_time(user_id, 'Husband')
-        if last_draw_time:
-            time_difference = int((datetime.now() - last_draw_time).total_seconds())  # 转换为整数秒
-            if time_difference < 10:  # 5分钟
-                try:
-                    remaining_time = await format_time(10 - time_difference)
-                    await bot.send(event, f"合不合适也要先待满10秒吧！\n还剩下{remaining_time}。", reply_message=True)
-                except Exception as e:
-                    await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
-                await husbands_draw.finish()
+    # if user_id not in bot.config.superusers: # 普通用户
+    #     last_draw_time = db_handler.get_last_trigger_time(user_id, 'Husband')
+    #     if last_draw_time:
+    #         time_difference = int((datetime.now() - last_draw_time).total_seconds())  # 转换为整数秒
+    #         if time_difference < 600:  # 5分钟
+    #             try:
+    #                 remaining_time = await format_time(600 - time_difference)
+    #                 await bot.send(event, f"合不合适也要先待满600秒吧！\n还剩下{remaining_time}。", reply_message=True)
+    #             except Exception as e:
+    #                 await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
+    #             await husbands_draw.finish()
 
     # if game_name:
     #     try:
@@ -1141,7 +1144,7 @@ async def handle_help_confirmation(bot: Bot, event: Event):
         message = (MessageSegment.image(buf) + 
                   MessageSegment.text("\n请先阅读并同意帮助信息并在120秒内回应：\n贴第一个表情表示已阅读并同意\n贴第二个表情表示不同意\n如果您的QQ版本过低，也可以直接使用 帮助抽游戏立绘 来查看帮助信息。"))
         
-        response = await bot.send(event, message)
+        response = await bot.send(event, message, reply_message=True)
         bot_message_id = response['message_id']
         original_message_id = event.message_id
         
@@ -1192,10 +1195,6 @@ async def handle_help_emoji_response(bot: Bot, event: NoticeEvent):
                 help_manager.remove_confirmation(user_id)
     except Exception as e:
         logger.error(f"处理表情响应时发生错误: {e}")
-
-
-# 投票状态
-ongoing_votes: Dict[str, Dict] = {}
 
 @on_notice
 async def handle_emoji_vote(bot: Bot, event: NoticeEvent):
