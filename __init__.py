@@ -58,6 +58,9 @@ delete_wives = on_fullmatch("这是女的", priority=5)
 vote_delete = on_command("投票删除", priority=5)
 help = on_fullmatch("帮助抽游戏立绘", priority=5)
 
+help_emoji_response = on_notice(priority=1, block=False)
+emoji_vote = on_notice(priority=1, block=False)
+
 __plugin_meta__ = PluginMetadata(
     name="游戏立绘抽卡",
     description="从本地图片库中随机抽取游戏人物立绘",
@@ -1170,7 +1173,7 @@ async def handle_help_confirmation(bot: Bot, event: Event):
         plt.close('all')
 
 
-@on_notice
+@help_emoji_response.handle()
 async def handle_help_emoji_response(bot: Bot, event: NoticeEvent):
     """处理帮助确认的表情响应"""
     try:
@@ -1196,7 +1199,7 @@ async def handle_help_emoji_response(bot: Bot, event: NoticeEvent):
     except Exception as e:
         logger.error(f"处理表情响应时发生错误: {e}")
 
-@on_notice
+@emoji_vote.handle()
 async def handle_emoji_vote(bot: Bot, event: NoticeEvent):
     """处理表情投票事件"""
     if event.notice_type == "group_msg_emoji_like":
