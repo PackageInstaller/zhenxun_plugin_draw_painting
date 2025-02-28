@@ -28,8 +28,10 @@ from nonebot.adapters.onebot.v11 import (
 )
 from ..config import paths, device
 from ..database import db_handler
+from nonebot.matcher import Matcher
 from zhenxun.services.log import logger
 from matplotlib.font_manager import FontProperties
+from nonebot.exception import FinishedException
 from matplotlib import pyplot as plt
 from rich.progress import (
     Progress,
@@ -320,47 +322,87 @@ help_manager = HelpConfirmationManager()
     
 class CommandHandler:
     """命令处理类"""
-    def dependency() -> None:
-        async def dependency(bot: Bot, matcher, event: Event) -> bool:
-            user_id = str(event.get_user_id())
-            
-            if not ModelManager.is_model_ready():
-                is_downloading, progress = ModelManager.get_download_status()
-                if is_downloading:
-                    await bot.send(
-                        event, 
-                        f"模型正在下载中，请稍后再试\n当前下载进度：{progress:.1f}%", 
-                        reply_message=True
+    @staticmethod
+    def dependency(block: bool = True) -> None:
+        """
+        命令处理依赖注入
+        :param block: 是否在检查失败时阻止事件传播
+        """
+        async def _dependency(bot: Bot, matcher: Matcher, event: Event) -> bool:
+            try:
+                user_id = str(event.get_user_id())
+                
+                # 检查机器人在群内是否被禁言
+                if isinstance(event, GroupMessageEvent):
+                    group_member_info = await bot.get_group_member_info(
+                        group_id=event.group_id,
+                        user_id=int(bot.self_id)
                     )
-                else:
-                    await bot.send(
-                        event, 
-                        "模型文件不存在或下载失败，请联系管理员", 
-                        reply_message=True
-                    )
-                await matcher.finish()
-                return False
-            
-            user_info = db_handler.get_user_info(user_id)
-            if user_info and int(user_info['read_help']) == 1:
-                return True
-            
-            if await help_manager.is_processing(user_id, db_handler):
-                if matcher.state.get("_command_name_") == "help":
+                    if group_member_info.get('shut_up_timestamp', 0) > 0:
+                        # 机器人被禁言，直接结束
+                        if block:
+                            await matcher.finish()
+                        return False
+
+                # 检查模型状态
+                if not ModelManager.is_model_ready():
+                    is_downloading, progress = ModelManager.get_download_status()
+                    try:
+                        if is_downloading:
+                            await bot.send(
+                                event, 
+                                f"模型正在下载中，请稍后再试\n当前下载进度：{progress:.1f}%", 
+                                reply_message=True
+                            )
+                        else:
+                            await bot.send(
+                                event, 
+                                "模型文件不存在或下载失败，请联系管理员", 
+                                reply_message=True
+                            )
+                    except Exception as e:
+                        logger.error(f"发送消息失败: {e}")
+                    if block:
+                        await matcher.finish()
+                    return False
+
+                # 检查用户状态
+                user_info = db_handler.get_user_info(user_id)
+                if user_info and int(user_info['read_help']) == 1:
                     return True
-                await bot.send(event, "请先同意霸王条款再使用其他指令。", reply_message=True)
-                await matcher.finish()
-                return False
-            
-            if int(user_info['read_help']) == 0:
-                from .. import handle_help_confirmation
-                await handle_help_confirmation(bot, event)
-                await matcher.finish()
-                return False
-            return True
 
-        return Depends(dependency)
+                if await help_manager.is_processing(user_id, db_handler):
+                    if matcher.state.get("_command_name_") == "help":
+                        return True
+                    try:
+                        await bot.send(event, "请先同意霸王条款再使用其他指令。", reply_message=True)
+                    except Exception as e:
+                        logger.error(f"发送消息失败: {e}")
+                    if block:
+                        await matcher.finish()
+                    return False
 
+                if int(user_info['read_help']) == 0:
+                    try:
+                        from .. import handle_help_confirmation
+                        await handle_help_confirmation(bot, event)
+                    except Exception as e:
+                        logger.error(f"处理帮助确认失败: {e}")
+                    if block:
+                        await matcher.finish()
+                    return False
+
+                return True
+
+            except FinishedException:
+                raise
+            except Exception as e:
+                logger.error(f"依赖检查时发生错误: {e}")
+                if block:
+                    await matcher.finish()
+                return False
+
+        return Depends(_dependency)
 
 
 @dataclass

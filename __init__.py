@@ -74,6 +74,11 @@ __plugin_meta__ = PluginMetadata(
     这是男的/女的 [抽老婆抽到男的的时候可以用，另一个同理，只能处理自己的立绘]
     投票删除 [回复抽到的图片，非男非女时可以使用]
     请注意，如果出现乱用指令的情况，将会被永久封禁。
+    Q:为什么没有xx游戏？
+    A:
+    1.这里面的游戏都是拆包获得的，如果你有想提供的，可以找我，我会放进去。
+    2.只有有完整静态立绘的游戏才会被收录。
+    3.如果你看不懂以上内容，建议重新学习小学语文，顺便再去医院检查一下智商。
     """.strip(),
     extra=PluginExtraData(
         author="少姜",
@@ -151,7 +156,7 @@ async def handle_help(bot: Bot, event: Event):
     plt.close('all')
 
 
-@wives_draw.handle(parameterless=[CommandHandler.dependency()])
+@wives_draw.handle(parameterless=[CommandHandler.dependency(block=True)])
 async def handle_wives_draw(bot: Bot, event: Event):
     """抽老婆"""
     user_id = str(event.get_user_id())
@@ -272,7 +277,7 @@ async def handle_wives_draw(bot: Bot, event: Event):
     await wives_draw.finish()
     
 
-@husbands_draw.handle(parameterless=[CommandHandler.dependency()])
+@husbands_draw.handle(parameterless=[CommandHandler.dependency(block=True)])
 async def handle_husbands_draw(bot: Bot, event: Event):
     """抽老公"""
     user_id = str(event.get_user_id())
@@ -395,7 +400,7 @@ async def handle_husbands_draw(bot: Bot, event: Event):
         await husbands_draw.finish()
 
 
-@wives_view.handle(parameterless=[CommandHandler.dependency()])
+@wives_view.handle(parameterless=[CommandHandler.dependency(block=True)])
 async def handle_wives_view(bot: Bot, event: Event):
     """我老婆"""
     user_id = str(event.get_user_id())
@@ -462,7 +467,7 @@ async def handle_wives_view(bot: Bot, event: Event):
             await wives_view.finish()
         
 
-@husbands_view.handle(parameterless=[CommandHandler.dependency()])
+@husbands_view.handle(parameterless=[CommandHandler.dependency(block=True)])
 async def handle_husbands_view(bot: Bot, event: Event):
     """我老公"""
     user_id = str(event.get_user_id())
@@ -529,7 +534,7 @@ async def handle_husbands_view(bot: Bot, event: Event):
             await husbands_view.finish()
 
 
-@wives_rename.handle(parameterless=[CommandHandler.dependency()])
+@wives_rename.handle(parameterless=[CommandHandler.dependency(block=True)])
 async def handle_wives_rename(bot: Bot, event: Event, state: T_State):
     """老婆改名"""
     user_id = str(event.get_user_id())
@@ -683,7 +688,7 @@ async def handle_got_new_wives_name(bot: Bot, event: Event, state: T_State):
         await wives_rename.finish()
 
 
-@husbands_rename.handle(parameterless=[CommandHandler.dependency()])
+@husbands_rename.handle(parameterless=[CommandHandler.dependency(block=True)])
 async def handle_husbands_rename(bot: Bot, event: Event, state: T_State):
     """老公改名"""
     user_id = str(event.get_user_id())
@@ -837,7 +842,7 @@ async def handle_got_new_husbands_name(bot: Bot, event: Event, state: T_State):
         await husbands_rename.finish()
 
 
-@wives_probability.handle(parameterless=[CommandHandler.dependency()])
+@wives_probability.handle(parameterless=[CommandHandler.dependency(block=True)])
 async def handle_wives_probability(bot: Bot, event: Event):
     """老婆概率"""
     try:
@@ -868,7 +873,7 @@ async def handle_wives_probability(bot: Bot, event: Event):
         await wives_probability.finish()
 
 
-@husbands_probability.handle(parameterless=[CommandHandler.dependency()])
+@husbands_probability.handle(parameterless=[CommandHandler.dependency(block=True)])
 async def handle_husbands_probability(bot: Bot, event: Event):
     """老公概率"""
     try:
@@ -899,7 +904,7 @@ async def handle_husbands_probability(bot: Bot, event: Event):
         await wives_probability.finish()
 
 
-@delete_husbands.handle(parameterless=[CommandHandler.dependency()])
+@delete_husbands.handle(parameterless=[CommandHandler.dependency(block=True)])
 async def handle_delete_husbands(bot: Bot, event: Event):
     """这是男的"""
     if event.reply:
@@ -1012,7 +1017,7 @@ async def handle_delete_husbands(bot: Bot, event: Event):
             await delete_husbands.finish()
 
 
-@delete_wives.handle(parameterless=[CommandHandler.dependency()])
+@delete_wives.handle(parameterless=[CommandHandler.dependency(block=True)])
 async def handle_delete_wives(bot: Bot, event: Event):
     """这是女的"""
     if event.reply:
@@ -1320,7 +1325,7 @@ async def finalize_vote(bot: Bot, vote_data, message_id, event, early_terminatio
         await bot.send(event, f"投票终止时发生错误：{str(e)}", reply_message=True)
 
 
-@vote_delete.handle(parameterless=[CommandHandler.dependency()])
+@vote_delete.handle(parameterless=[CommandHandler.dependency(block=True)])
 async def handle_vote_delete(bot: Bot, event: GroupMessageEvent, state: T_State, args: Message = CommandArg()):
 
     state["reply_message_id"] = event.reply.message_id if event.reply else None
