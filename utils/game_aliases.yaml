@@ -103,3 +103,11 @@ games:
       - rxr
       - 反向蓝
     en_name: ReverseBluexRe-birthEnd
+
+  - name: GoddessOfVictory:Nikke
+    aliases:
+      - 妮姬
+
+  - name: HorizonWalker
+    aliases:
+      - 地平线行者

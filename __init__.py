@@ -454,17 +454,19 @@ async def handle_wives_view(bot: Bot, event: Event):
             await wives_view.finish()
     else:
         # 正常发送
-        message_content = f"你老婆是 {display_name}：\n下面是所有立绘\n"
+        message = Message(f"你老婆是 {display_name}：\n下面是所有立绘\n")
+        
         for img in matching_images:
             full_name = os.path.splitext(img)[0]
-            message_content += f"{full_name}\n"
-
-        image_paths = [os.path.join(wives_images_folder, img) for img in matching_images]
+            img_path = os.path.join(wives_images_folder, img)
+            # 添加立绘名称和对应图片
+            message += Message(f"{full_name}\n") + MessageSegment.image(img_path) + Message("\n")
+            
         try:
-            await send_image_message(bot, event, message_content, image_paths)
+            await bot.send(event, message)
         except Exception as e:
             await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
-            await wives_view.finish()
+        await wives_view.finish()
         
 
 @husbands_view.handle(parameterless=[CommandHandler.dependency(block=True)])
@@ -521,17 +523,19 @@ async def handle_husbands_view(bot: Bot, event: Event):
             await husbands_view.finish()
     else:
         # 正常发送
-        message_content = f"你老公是 {display_name}：\n下面是所有立绘\n"
+        message = Message(f"你老公是 {display_name}：\n下面是所有立绘\n")
+        
         for img in matching_images:
             full_name = os.path.splitext(img)[0]
-            message_content += f"{full_name}\n"
-
-        image_paths = [os.path.join(husbands_images_folder, img) for img in matching_images]
+            img_path = os.path.join(husbands_images_folder, img)
+            # 添加立绘名称和对应图片
+            message += Message(f"{full_name}\n") + MessageSegment.image(img_path) + Message("\n")
+            
         try:
-            await send_image_message(bot, event, message_content, image_paths)
+            await bot.send(event, message)
         except Exception as e:
             await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
-            await husbands_view.finish()
+        await husbands_view.finish()
 
 
 @wives_rename.handle(parameterless=[CommandHandler.dependency(block=True)])
