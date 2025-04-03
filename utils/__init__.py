@@ -323,7 +323,7 @@ help_manager = HelpConfirmationManager()
 class CommandHandler:
     """命令处理类"""
     @staticmethod
-    def dependency(block: bool = True) -> None:
+    def dependency(block: bool = False) -> None:
         """
         命令处理依赖注入
         :param block: 是否在检查失败时阻止事件传播
@@ -336,9 +336,12 @@ class CommandHandler:
                 if isinstance(event, GroupMessageEvent):
                     group_member_info = await bot.get_group_member_info(
                         group_id=event.group_id,
-                        user_id=int(bot.self_id)
+                        user_id=int(bot.self_id),
+                        no_cache=True
                     )
-                    if group_member_info.get('shut_up_timestamp', 0) > 0:
+                    # 判断禁言状态：shut_up_timestamp大于当前时间戳才表示被禁言
+                    current_timestamp = int(datetime.now().timestamp())
+                    if group_member_info.get('shut_up_timestamp', 0) > current_timestamp:
                         # 机器人被禁言，直接结束
                         if block:
                             await matcher.finish()
