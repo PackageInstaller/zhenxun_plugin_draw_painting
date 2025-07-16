@@ -44,13 +44,13 @@ drop_folder = paths.DROP_FOLDER
 font_path = paths.FONT_PATH
 
 wives_draw = on_regex(r"^抽(?!.*老公).*老婆.*$", priority=5)
-wives_view = on_fullmatch("我老婆", priority=5)
+wives_view = on_fullmatch("查看老婆", priority=5)
 wives_rename = on_command("老婆改名", priority=5, expire_time=None)
 wives_probability = on_command("老婆概率", priority=5)
 delete_husbands = on_fullmatch("这是男的", priority=5)
 
 husbands_draw = on_regex(r"^抽(?!.*老婆).*老公.*$", priority=5)
-husbands_view = on_fullmatch("我老公", priority=5)
+husbands_view = on_fullmatch("查看老公", priority=5)
 husbands_rename = on_command("老公改名", priority=5, expire_time=None)
 husbands_probability = on_command("老公概率", priority=5)
 delete_wives = on_fullmatch("这是女的", priority=5)
@@ -68,11 +68,12 @@ __plugin_meta__ = PluginMetadata(
     抽取老婆/老公
     指令：
     抽老婆/老公［游戏名参数可选］
-    我老婆/老公 [查看所有立绘]
+    查看老婆/老公 [查看所有立绘]
     老婆/老公改名 [修改单张立绘名称]
     老婆/老公概率 ?[数量参数可选，默认全部] [查看各游戏占比]
     这是男的/女的 [抽老婆抽到男的的时候可以用，另一个同理，只能处理自己的立绘]
     投票删除 [回复抽到的图片，非男非女时可以使用]
+    帮助抽游戏立绘 查看帮助
     请注意，如果出现乱用指令的情况，将会被永久封禁。
     Q:为什么没有xx游戏？
     A:
@@ -117,9 +118,8 @@ async def initialize():
 @help.handle()
 async def handle_help(bot: Bot, event: Event):
     """帮助指令，输出为图片形式"""
+
     user_id = str(event.get_user_id())
-    
-    # 如果存在确认状态，移除它
     confirmation = help_manager.get_confirmation(user_id)
     if confirmation:
         help_manager.remove_confirmation(user_id)
@@ -147,7 +147,6 @@ async def handle_help(bot: Bot, event: Event):
         warning_message = ""
     message = MessageSegment.image(buf) + MessageSegment.text(warning_message)
 
-    # 标记帮助信息为已读
     db_handler.mark_help_as_read(user_id)
 
     await bot.send(event, message, reply_message=True)
@@ -159,6 +158,7 @@ async def handle_help(bot: Bot, event: Event):
 @wives_draw.handle(parameterless=[CommandHandler.dependency(block=True)])
 async def handle_wives_draw(bot: Bot, event: Event):
     """抽老婆"""
+    
     user_id = str(event.get_user_id())
     message_text = event.get_plaintext().strip().lower()
 

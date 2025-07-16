@@ -559,7 +559,7 @@ async def get_original_sender(bot: Bot, message_id: int) -> int:
                 return await get_original_sender(bot, reply_message_id)
         return msg['sender']['user_id']
     except Exception as e:
-        return None
+        return 0
 
 
 async def send_image_message(bot, event, title, image_paths):
