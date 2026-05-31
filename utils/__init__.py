@@ -24,7 +24,7 @@ from nonebot.adapters.onebot.v11 import (
     Event,
     MessageSegment,
     GroupMessageEvent,
-    Message
+    Message,
 )
 from ..config import paths, device
 from ..database import db_handler
@@ -40,7 +40,7 @@ from rich.progress import (
     TaskProgressColumn,
     TimeRemainingColumn,
     TimeElapsedColumn,
-    SpinnerColumn
+    SpinnerColumn,
 )
 from dataclasses import dataclass
 
@@ -49,6 +49,8 @@ wives_images_folder = paths.WIVES_IMAGES_FOLDER
 drop_folder = paths.DROP_FOLDER
 font_path = paths.FONT_PATH
 game_aliases_path = paths.GAME_ALIASES_PATH
+
+
 class ModelManager:
     _instance = None
     _model = None
@@ -57,13 +59,13 @@ class ModelManager:
     _is_downloading = False
     _download_progress = 0
     _max_retries = 3
-    
+
     @classmethod
     def verify_model(cls, file_path: str) -> bool:
         """验证模型文件的SHA256哈希值"""
         if not os.path.exists(file_path):
             return False
-            
+
         try:
             sha256_hash = hashlib.sha256()
             with open(file_path, "rb") as f:
@@ -73,24 +75,24 @@ class ModelManager:
         except Exception as e:
             logger.error(f"验证模型文件时发生错误: {e}")
             return False
-    
+
     @classmethod
     async def download_model(cls):
         """异步下载模型文件，支持断点续传和重试"""
         model_path = os.path.join(paths.MODEL_DIR, "model-resnet_custom_v3.pt")
         temp_path = f"{model_path}.temp"
         os.makedirs(paths.MODEL_DIR, exist_ok=True)
-        
+
         cls._is_downloading = True
         cls._download_progress = 0
         retry_count = 0
-        
+
         if os.path.exists(temp_path):
             initial_size = os.path.getsize(temp_path)
             logger.info(f"找到临时文件，已下载 {initial_size / 1024 / 1024:.2f} MiB")
         else:
             initial_size = 0
-        
+
         progress = Progress(
             SpinnerColumn(),
             TextColumn("[bold blue]{task.description}"),
@@ -104,11 +106,13 @@ class ModelManager:
             TextColumn("预计剩余: "),
             TimeRemainingColumn(),
         )
-        
+
         while retry_count < cls._max_retries:
             try:
-                headers = {'Range': f'bytes={initial_size}-'} if initial_size > 0 else {}
-                
+                headers = (
+                    {"Range": f"bytes={initial_size}-"} if initial_size > 0 else {}
+                )
+
                 async with aiohttp.ClientSession() as session:
                     async with session.get(cls._MODEL_URL, headers=headers) as response:
                         if response.status not in [200, 206]:
@@ -116,28 +120,43 @@ class ModelManager:
                             retry_count += 1
                             await asyncio.sleep(1)
                             continue
-                        
-                        total_size = int(response.headers.get('content-length', 0)) + initial_size
+
+                        total_size = (
+                            int(response.headers.get("content-length", 0))
+                            + initial_size
+                        )
                         total_size_mib = total_size / 1024 / 1024  # 转换为 MiB
                         initial_size_mib = initial_size / 1024 / 1024  # 转换为 MiB
-                        
-                        with open(temp_path, 'ab' if initial_size > 0 else 'wb') as f:
+
+                        with open(temp_path, "ab" if initial_size > 0 else "wb") as f:
                             with progress:
                                 task = progress.add_task(
-                                    f"下载模型 ({retry_count + 1}/{cls._max_retries})", 
+                                    f"下载模型 ({retry_count + 1}/{cls._max_retries})",
                                     total=total_size_mib,
-                                    completed=initial_size_mib
+                                    completed=initial_size_mib,
                                 )
                                 try:
-                                    async for chunk in response.content.iter_chunked(1024):
+                                    async for chunk in response.content.iter_chunked(
+                                        1024
+                                    ):
                                         size = f.write(chunk)
                                         # 转换增量为 MiB
-                                        progress.update(task, advance=size/1024/1024)
-                                        cls._download_progress = (progress.tasks[0].completed / total_size_mib) * 100 if total_size > 0 else 0
+                                        progress.update(
+                                            task, advance=size / 1024 / 1024
+                                        )
+                                        cls._download_progress = (
+                                            (
+                                                progress.tasks[0].completed
+                                                / total_size_mib
+                                            )
+                                            * 100
+                                            if total_size > 0
+                                            else 0
+                                        )
                                 except Exception as e:
                                     logger.error(f"下载过程中发生错误: {e}")
                                     raise
-                
+
                 if cls.verify_model(temp_path):
                     if os.path.exists(model_path):
                         os.remove(model_path)
@@ -153,47 +172,48 @@ class ModelManager:
                     initial_size = 0
                     retry_count += 1
                     continue
-                    
+
             except Exception as e:
                 logger.error(f"下载模型文件时发生错误: {e}")
                 retry_count += 1
                 if os.path.exists(temp_path):
                     initial_size = os.path.getsize(temp_path)
                 await asyncio.sleep(1)
-        
+
         cls._is_downloading = False
         cls._download_progress = 0
         if os.path.exists(temp_path):
             os.remove(temp_path)
         return False
-    
+
     @classmethod
     def is_model_ready(cls):
         """检查模型是否准备就绪"""
         model_path = os.path.join(paths.MODEL_DIR, "model-resnet_custom_v3.pt")
-        return os.path.exists(model_path) and not cls._is_downloading and cls.verify_model(model_path)
+        return (
+            os.path.exists(model_path)
+            and not cls._is_downloading
+            and cls.verify_model(model_path)
+        )
 
     @classmethod
     def get_download_status(cls):
         """获取下载状态"""
         return cls._is_downloading, cls._download_progress
-    
+
     @classmethod
     def get_model(cls):
         model_path = os.path.join(paths.MODEL_DIR, "model-resnet_custom_v3.pt")
-        
+
         if cls._model is None:
             if not os.path.exists(model_path):
-                if not asyncio.get_event_loop().run_until_complete(cls.download_model()):
+                if not asyncio.get_event_loop().run_until_complete(
+                    cls.download_model()
+                ):
                     raise RuntimeError("模型文件下载失败")
-            
+
             cls._model = DeepDanbooruModel()
-            cls._model.load_state_dict(
-                torch.load(
-                    model_path,
-                    weights_only=True
-                )
-            )
+            cls._model.load_state_dict(torch.load(model_path, weights_only=True))
             cls._model = cls._model.to(device.DEVICE)
             cls._model.eval()
         return cls._model
@@ -208,28 +228,38 @@ class HelpConfirmationState:
     start_time: datetime
     timeout_task: Optional[asyncio.Task] = None
     group_id: Optional[int] = None
-    
+
 
 class HelpConfirmationManager:
     _instance = None
     _help_confirmations: Dict[str, HelpConfirmationState] = {}
-    
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(HelpConfirmationManager, cls).__new__(cls)
         return cls._instance
-    
+
     @classmethod
-    async def add_confirmation(cls, user_id: str, message_id: int, original_message_id: int, bot: Bot, event: Event) -> None:
-        if user_id in cls._help_confirmations and cls._help_confirmations[user_id].timeout_task:
+    async def add_confirmation(
+        cls,
+        user_id: str,
+        message_id: int,
+        original_message_id: int,
+        bot: Bot,
+        event: Event,
+    ) -> None:
+        if (
+            user_id in cls._help_confirmations
+            and cls._help_confirmations[user_id].timeout_task
+        ):
             cls._help_confirmations[user_id].timeout_task.cancel()
-        
+
         group_id = None
-        if hasattr(event, 'group_id'):
+        if hasattr(event, "group_id"):
             group_id = event.group_id
-        
+
         timeout_task = asyncio.create_task(cls._handle_timeout(user_id, bot, event))
-        
+
         cls._help_confirmations[user_id] = HelpConfirmationState(
             message_id=message_id,
             original_message_id=original_message_id,
@@ -237,9 +267,9 @@ class HelpConfirmationManager:
             processing=True,
             start_time=datetime.now(),
             timeout_task=timeout_task,
-            group_id=group_id
+            group_id=group_id,
         )
-    
+
     @classmethod
     async def _handle_timeout(cls, user_id: str, bot: Bot, event: Event):
         """处理超时"""
@@ -248,16 +278,23 @@ class HelpConfirmationManager:
             confirmation = cls.get_confirmation(user_id)
             if confirmation and not confirmation.confirmed:
                 try:
-                    timeout_message = "您没有及时确认帮助信息，请重新触发指令以查看帮助。"
-                    
+                    timeout_message = (
+                        "您没有及时确认帮助信息，请重新触发指令以查看帮助。"
+                    )
+
                     if confirmation.group_id:
-                        reply_msg = MessageSegment.reply(confirmation.original_message_id) + timeout_message
+                        reply_msg = (
+                            MessageSegment.reply(confirmation.original_message_id)
+                            + timeout_message
+                        )
                         await bot.send_group_msg(
-                            group_id=confirmation.group_id,
-                            message=reply_msg
+                            group_id=confirmation.group_id, message=reply_msg
                         )
                     else:
-                        reply_msg = MessageSegment.reply(confirmation.original_message_id) + timeout_message
+                        reply_msg = (
+                            MessageSegment.reply(confirmation.original_message_id)
+                            + timeout_message
+                        )
                         await bot.send(event, reply_msg)
                 except Exception as e:
                     logger.error(f"发送超时消息失败: {e}")
@@ -268,11 +305,11 @@ class HelpConfirmationManager:
         except Exception as e:
             logger.error(f"处理超时时发生错误: {e}")
             cls.remove_confirmation(user_id)
-    
+
     @classmethod
     def get_confirmation(cls, user_id: str) -> Optional[HelpConfirmationState]:
         return cls._help_confirmations.get(user_id)
-    
+
     @classmethod
     def remove_confirmation(cls, user_id: str) -> None:
         try:
@@ -283,7 +320,7 @@ class HelpConfirmationManager:
         except Exception as e:
             logger.error(f"移除确认状态时发生错误: {e}")
             cls._help_confirmations.pop(user_id, None)
-    
+
     @classmethod
     async def set_confirmed(cls, user_id: str, confirmed: bool = True) -> None:
         try:
@@ -295,53 +332,58 @@ class HelpConfirmationManager:
         except Exception as e:
             logger.error(f"设置确认状态时发生错误: {e}")
             cls.remove_confirmation(user_id)
-    
+
     @classmethod
     async def is_processing(cls, user_id: str, db_handler) -> bool:
         try:
             user_info = db_handler.get_user_info(user_id)
-            if user_info and int(user_info['read_help']) == 1:
+            if user_info and int(user_info["read_help"]) == 1:
                 cls.remove_confirmation(user_id)
                 return False
-                
+
             confirmation = cls._help_confirmations.get(user_id)
             if not confirmation:
                 return False
-                
-            if (datetime.now() - confirmation.start_time).total_seconds() > 120: # 超时
+
+            if (datetime.now() - confirmation.start_time).total_seconds() > 120:  # 超时
                 cls.remove_confirmation(user_id)
                 return False
-                
+
             return confirmation.processing
         except Exception as e:
             logger.error(f"检查处理状态时发生错误: {e}")
             cls.remove_confirmation(user_id)
             return False
 
+
 help_manager = HelpConfirmationManager()
-    
+
+
 class CommandHandler:
     """命令处理类"""
+
     @staticmethod
     def dependency(block: bool = False) -> None:
         """
         命令处理依赖注入
         :param block: 是否在检查失败时阻止事件传播
         """
+
         async def _dependency(bot: Bot, matcher: Matcher, event: Event) -> bool:
             try:
                 user_id = str(event.get_user_id())
-                
+
                 # 检查机器人在群内是否被禁言
                 if isinstance(event, GroupMessageEvent):
                     group_member_info = await bot.get_group_member_info(
-                        group_id=event.group_id,
-                        user_id=int(bot.self_id),
-                        no_cache=True
+                        group_id=event.group_id, user_id=int(bot.self_id), no_cache=True
                     )
                     # 判断禁言状态：shut_up_timestamp大于当前时间戳才表示被禁言
                     current_timestamp = int(datetime.now().timestamp())
-                    if group_member_info.get('shut_up_timestamp', 0) > current_timestamp:
+                    if (
+                        group_member_info.get("shut_up_timestamp", 0)
+                        > current_timestamp
+                    ):
                         # 机器人被禁言，直接结束
                         if block:
                             await matcher.finish()
@@ -353,15 +395,15 @@ class CommandHandler:
                     try:
                         if is_downloading:
                             await bot.send(
-                                event, 
-                                f"模型正在下载中，请稍后再试\n当前下载进度：{progress:.1f}%", 
-                                reply_message=True
+                                event,
+                                f"模型正在下载中，请稍后再试\n当前下载进度：{progress:.1f}%",
+                                reply_message=True,
                             )
                         else:
                             await bot.send(
-                                event, 
-                                "模型文件不存在或下载失败，请联系管理员", 
-                                reply_message=True
+                                event,
+                                "模型文件不存在或下载失败，请联系管理员",
+                                reply_message=True,
                             )
                     except Exception as e:
                         logger.error(f"发送消息失败: {e}")
@@ -371,23 +413,28 @@ class CommandHandler:
 
                 # 检查用户状态
                 user_info = db_handler.get_user_info(user_id)
-                if user_info and int(user_info['read_help']) == 1:
+                if user_info and int(user_info["read_help"]) == 1:
                     return True
 
                 if await help_manager.is_processing(user_id, db_handler):
                     if matcher.state.get("_command_name_") == "help":
                         return True
                     try:
-                        await bot.send(event, "请先同意霸王条款再使用其他指令。", reply_message=True)
+                        await bot.send(
+                            event,
+                            "请先同意霸王条款再使用其他指令。",
+                            reply_message=True,
+                        )
                     except Exception as e:
                         logger.error(f"发送消息失败: {e}")
                     if block:
                         await matcher.finish()
                     return False
 
-                if int(user_info['read_help']) == 0:
+                if int(user_info["read_help"]) == 0:
                     try:
                         from .. import handle_help_confirmation
+
                         await handle_help_confirmation(bot, event)
                     except Exception as e:
                         logger.error(f"处理帮助确认失败: {e}")
@@ -411,36 +458,33 @@ class CommandHandler:
 @dataclass
 class GameInfo:
     """游戏信息类"""
+
     name: str
     aliases: List[str]
     short_name: Optional[str] = None
     en_name: Optional[str] = None
 
+
 class GameAliasManager:
     """游戏别名管理器"""
+
     def __init__(self):
         self.games_config: List[GameInfo] = []
         self.game_aliases: Dict[str, List[str]] = {}
         self._name_mapping: Dict[str, str] = {}
         self._load_config()
-        
+
     def _load_config(self):
         """加载游戏配置"""
-        
+
         try:
-            with open(paths.GAME_ALIASES_PATH, 'r', encoding='utf-8') as f:
+            with open(paths.GAME_ALIASES_PATH, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
-            
-            self.games_config = [
-                GameInfo(**game_data) 
-                for game_data in data['games']
-            ]
-            
-            self.game_aliases = {
-                game.name: game.aliases 
-                for game in self.games_config
-            }
-            
+
+            self.games_config = [GameInfo(**game_data) for game_data in data["games"]]
+
+            self.game_aliases = {game.name: game.aliases for game in self.games_config}
+
             for game in self.games_config:
                 self._name_mapping[game.name.lower()] = game.name
                 for alias in game.aliases:
@@ -449,17 +493,17 @@ class GameAliasManager:
                     self._name_mapping[game.en_name.lower()] = game.name
                 if game.short_name:
                     self._name_mapping[game.short_name.lower()] = game.name
-                    
+
         except Exception as e:
             logger.error(f"加载游戏别名配置失败: {e}")
             self.games_config = []
             self.game_aliases = {}
             self._name_mapping = {}
-    
+
     async def get_game_name_from_alias(self, alias: str) -> str:
         """从别名获取标准游戏名称"""
         return self._name_mapping.get(alias.lower(), alias)
-    
+
     def reload_config(self):
         """重新加载配置"""
         self.games_config.clear()
@@ -472,10 +516,10 @@ class GameAliasManager:
         std_name = self._name_mapping.get(name.lower())
         if std_name:
             return next(
-                (game for game in self.games_config if game.name == std_name),
-                None
+                (game for game in self.games_config if game.name == std_name), None
             )
         return None
+
 
 game_alias_manager = GameAliasManager()
 
@@ -492,7 +536,7 @@ async def determine_gender(img_path):
         a = np.expand_dims(np.array(pic, dtype=np.float32), 0) / 255
         x = torch.from_numpy(a)
         x = x.to(device.DEVICE)
-        
+
         model = ModelManager.get_model()
 
         with torch.no_grad():
@@ -500,9 +544,21 @@ async def determine_gender(img_path):
             if device.DEVICE.type == "cuda":
                 y = y.cpu()
             y = y.numpy()
+
+            # 计算包含"boy"和"girl"的标签的置信度总和
+            boy_confidence = sum(
+                y[i] for i, tag in enumerate(model.tags) if "boy" in tag
+            )
+            girl_confidence = sum(
+                y[i] for i, tag in enumerate(model.tags) if "girl" in tag
+            )
             
-            boy_confidence = sum(y[i] for i, tag in enumerate(model.tags) if "boy" in tag)
-            girl_confidence = sum(y[i] for i, tag in enumerate(model.tags) if "girl" in tag)
+            # 归一化到0-1之间，确保两者之和为1
+            total_confidence = boy_confidence + girl_confidence
+            if total_confidence > 0:
+                boy_confidence = boy_confidence / total_confidence
+                girl_confidence = girl_confidence / total_confidence
+            
             return boy_confidence, girl_confidence
     except Exception:
         return 0.0, 0.0
@@ -532,10 +588,9 @@ async def improved_partial_word_match(game_name_parts, game_names_in_library):
     return [game for game, score in matched_games if score >= 70]
 
 
-
 async def get_random_choice(choices):
     """从给定选项中随机选择一个元素"""
-        
+
     if platform.system() == "Linux":
         try:
             with open("/dev/random", "rb") as f:
@@ -552,19 +607,19 @@ async def get_original_sender(bot: Bot, message_id: int) -> int:
     """递归获取最初消息的发送者 ID,传入event.reply.message_id"""
     try:
         msg = await bot.get_msg(message_id=message_id)
-        message_chain = msg['message']
+        message_chain = msg["message"]
         for segment in message_chain:
-            if segment['type'] == 'reply':
-                reply_message_id = int(segment['data']['id'])
+            if segment["type"] == "reply":
+                reply_message_id = int(segment["data"]["id"])
                 return await get_original_sender(bot, reply_message_id)
-        return msg['sender']['user_id']
+        return msg["sender"]["user_id"]
     except Exception as e:
         return 0
 
 
 async def send_image_message(bot, event, title, image_paths):
     """发送图片消息"""
-    image_segments = [MessageSegment.image(f'file:///{img}') for img in image_paths]
+    image_segments = [MessageSegment.image(f"file:///{img}") for img in image_paths]
     message = Message([MessageSegment.text(title)] + image_segments)
     await bot.send(event, message, reply_message=True)
 
@@ -576,7 +631,7 @@ async def format_time(seconds: int) -> str:
     days, hours = divmod(hours, 24)
 
     time_parts = []
-    
+
     if days > 0:
         time_parts.append(f"{days}天")
     if hours > 0:
@@ -586,17 +641,28 @@ async def format_time(seconds: int) -> str:
     if seconds > 0 or not time_parts:  # 0秒
         time_parts.append(f"{seconds}秒")
 
-    return ''.join(time_parts)
+    return "".join(time_parts)
 
 
 async def parse_chinese_numeral(text):
     """将中文数字转换为阿拉伯数字，支持百位、十位"""
-    chinese_numerals = {'一': 1, '二': 2, '三': 3, '四': 4, '五': 5,
-     '六': 6, '七': 7, '八': 8, '九': 9, '十': 10, '百': 100}
+    chinese_numerals = {
+        "一": 1,
+        "二": 2,
+        "三": 3,
+        "四": 4,
+        "五": 5,
+        "六": 6,
+        "七": 7,
+        "八": 8,
+        "九": 9,
+        "十": 10,
+        "百": 100,
+    }
     result = 0
 
-    if '百' in text:
-        parts = text.split('百')
+    if "百" in text:
+        parts = text.split("百")
         if parts[0]:
             result += chinese_numerals.get(parts[0], 1) * 100
         else:
@@ -605,10 +671,10 @@ async def parse_chinese_numeral(text):
         if len(parts) > 1 and parts[1]:
             text = parts[1]
         else:
-            text = ''
+            text = ""
 
-    if '十' in text:
-        parts = text.split('十')
+    if "十" in text:
+        parts = text.split("十")
         if parts[0]:
             result += chinese_numerals.get(parts[0], 1) * 10
         else:
@@ -621,6 +687,7 @@ async def parse_chinese_numeral(text):
                 result = result * 10 + chinese_numerals[char]
 
     return result if result > 0 else None
+
 
 async def send_forward_msg_handler(bot, event, *args):
     """
@@ -636,29 +703,41 @@ async def send_forward_msg_handler(bot, event, *args):
 
     if len(args) == 3:
         name, uin, msgs = args
-        messages = [{"type": "node", "data": {"name": name, "uin": uin, "content": msg}} for msg in msgs]
+        messages = [
+            {"type": "node", "data": {"name": name, "uin": uin, "content": msg}}
+            for msg in msgs
+        ]
         if isinstance(event, GroupMessageEvent):
-            await bot.call_api("send_group_forward_msg", group_id=event.group_id, messages=messages)
+            await bot.call_api(
+                "send_group_forward_msg", group_id=event.group_id, messages=messages
+            )
         else:
-            await bot.call_api("send_private_forward_msg", user_id=event.user_id, messages=messages)
+            await bot.call_api(
+                "send_private_forward_msg", user_id=event.user_id, messages=messages
+            )
     elif len(args) == 1 and isinstance(args[0], list):
         messages = args[0]
         if isinstance(event, GroupMessageEvent):
-            await bot.call_api("send_group_forward_msg", group_id=event.group_id, messages=messages)
+            await bot.call_api(
+                "send_group_forward_msg", group_id=event.group_id, messages=messages
+            )
         else:
-            await bot.call_api("send_private_forward_msg", user_id=event.user_id, messages=messages)
+            await bot.call_api(
+                "send_private_forward_msg", user_id=event.user_id, messages=messages
+            )
     else:
         raise ValueError("参数数量或类型不匹配")
 
 
 async def perform_wife_rename(bot: Bot, event: Event, user_id: str, new_name: str):
     """老婆重命名"""
-    stored_name = db_handler.get_card_name(user_id, 'Wife')
+    stored_name = db_handler.get_card_name(user_id, "Wife")
     game_name, char_name, *rest = stored_name.split("_")
     stored_image_suffix = "_".join(rest) if rest else ""
     renamed_images = db_handler.get_renamed_images()
     matching_images = [
-        img for img in os.listdir(wives_images_folder)
+        img
+        for img in os.listdir(wives_images_folder)
         if os.path.splitext(img)[0].startswith(f"{game_name}_{char_name}")
     ]
 
@@ -676,37 +755,50 @@ async def perform_wife_rename(bot: Bot, event: Event, user_id: str, new_name: st
             continue
 
         img_name_parts = os.path.splitext(img)[0].split("_")
-        img_suffix = "_".join(img_name_parts[2:]) if len(img_name_parts) > 2 else ""  # 提取后缀部分
+        img_suffix = (
+            "_".join(img_name_parts[2:]) if len(img_name_parts) > 2 else ""
+        )  # 提取后缀部分
 
         if img_suffix == stored_image_suffix:
-            new_path = os.path.join(wives_images_folder, new_name + os.path.splitext(img)[1])
-            db_handler.update_renamed_record(user_id, os.path.splitext(img)[0], new_name)
+            new_path = os.path.join(
+                wives_images_folder, new_name + os.path.splitext(img)[1]
+            )
+            db_handler.update_renamed_record(
+                user_id, os.path.splitext(img)[0], new_name
+            )
         else:
             # 其他匹配图片保留原有后缀部分，改名前缀为新名字的游戏名和角色名，但不记录到数据库
-            new_base_name = f"{new_name.split('_')[0]}_{new_name.split('_')[1]}_{img_suffix}"
-            new_path = os.path.join(wives_images_folder, new_base_name + os.path.splitext(img)[1])
+            new_base_name = (
+                f"{new_name.split('_')[0]}_{new_name.split('_')[1]}_{img_suffix}"
+            )
+            new_path = os.path.join(
+                wives_images_folder, new_base_name + os.path.splitext(img)[1]
+            )
 
         try:
             os.rename(old_path, new_path)
         except Exception as e:
             await bot.send(event, f"重命名失败：{str(e)}", reply_message=True)
 
-    db_handler.update_draw_record(user_id, new_name, 'Wife')
+    db_handler.update_draw_record(user_id, new_name, "Wife")
 
     try:
-        await bot.send(event, f"已将你老婆和相关立绘重命名为 {new_name}", reply_message=True)
+        await bot.send(
+            event, f"已将你老婆和相关立绘重命名为 {new_name}", reply_message=True
+        )
     except Exception as e:
         await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
 
 
 async def perform_husband_rename(bot: Bot, event: Event, user_id: str, new_name: str):
     """老公重命名"""
-    stored_name = db_handler.get_card_name(user_id, 'Husband')
+    stored_name = db_handler.get_card_name(user_id, "Husband")
     game_name, char_name, *rest = stored_name.split("_")
     stored_image_suffix = "_".join(rest) if rest else ""
     renamed_images = db_handler.get_renamed_images()
     matching_images = [
-        img for img in os.listdir(husbands_images_folder)
+        img
+        for img in os.listdir(husbands_images_folder)
         if os.path.splitext(img)[0].startswith(f"{game_name}_{char_name}")
     ]
 
@@ -727,22 +819,32 @@ async def perform_husband_rename(bot: Bot, event: Event, user_id: str, new_name:
         img_suffix = "_".join(img_name_parts[2:]) if len(img_name_parts) > 2 else ""
 
         if img_suffix == stored_image_suffix:
-            new_path = os.path.join(husbands_images_folder, new_name + os.path.splitext(img)[1])
-            db_handler.update_renamed_record(user_id, os.path.splitext(img)[0], new_name)
+            new_path = os.path.join(
+                husbands_images_folder, new_name + os.path.splitext(img)[1]
+            )
+            db_handler.update_renamed_record(
+                user_id, os.path.splitext(img)[0], new_name
+            )
         else:
             # 其他匹配图片保留原有后缀部分，改名前缀为新名字的游戏名和角色名，但不记录到数据库
-            new_base_name = f"{new_name.split('_')[0]}_{new_name.split('_')[1]}_{img_suffix}"
-            new_path = os.path.join(husbands_images_folder, new_base_name + os.path.splitext(img)[1])
+            new_base_name = (
+                f"{new_name.split('_')[0]}_{new_name.split('_')[1]}_{img_suffix}"
+            )
+            new_path = os.path.join(
+                husbands_images_folder, new_base_name + os.path.splitext(img)[1]
+            )
 
         try:
             os.rename(old_path, new_path)
         except Exception as e:
             await bot.send(event, f"重命名失败：{str(e)}", reply_message=True)
 
-    db_handler.update_draw_record(user_id, new_name, 'Wife')
+    db_handler.update_draw_record(user_id, new_name, "Wife")
 
     try:
-        await bot.send(event, f"已将你老公和相关立绘重命名为 {new_name}", reply_message=True)
+        await bot.send(
+            event, f"已将你老公和相关立绘重命名为 {new_name}", reply_message=True
+        )
     except Exception as e:
         await bot.send(event, f"发送消息时发生错误：{str(e)}", reply_message=True)
 
@@ -761,10 +863,12 @@ async def is_exact_match(img_name: str, stored_name: str) -> bool:
     return img_parts[:2] == stored_parts[:2]
 
 
-async def generate_and_send_stats(bot: Bot, event: Event, game_stats: Dict[str, Dict], limit: int):
+async def generate_and_send_stats(
+    bot: Bot, event: Event, game_stats: Dict[str, Dict], limit: int
+):
     """
     生成统计图表并通过合并转发发送
-    
+
     Args:
         bot: Bot实例
         event: 事件实例
@@ -774,20 +878,20 @@ async def generate_and_send_stats(bot: Bot, event: Event, game_stats: Dict[str, 
     font_prop = FontProperties(fname=font_path)
     sorted_games = sorted(game_stats.items(), key=lambda x: x[1]["count"], reverse=True)
     display_games = sorted_games[:limit]
-    
+
     BATCH_SIZE = 10
     total_batches = (len(display_games) + BATCH_SIZE - 1) // BATCH_SIZE
-    
+
     forward_messages = []
-    
+
     for batch_num in range(total_batches):
         start_idx = batch_num * BATCH_SIZE
         end_idx = min((batch_num + 1) * BATCH_SIZE, len(display_games))
         batch_games = display_games[start_idx:end_idx]
-        
+
         text_lines = []
         max_length = 0
-        
+
         for rank, (game_name, stats) in enumerate(batch_games, start_idx + 1):
             line = (
                 f"第 {rank} 位: {game_name}\n"
@@ -796,51 +900,60 @@ async def generate_and_send_stats(bot: Bot, event: Event, game_stats: Dict[str, 
                 f"    平均皮肤数: {stats['avg_skins']:.1f}"
             )
             text_lines.append(line)
-            max_length = max(max_length, max(len(l) for l in line.split('\n')))
+            max_length = max(max_length, max(len(l) for l in line.split("\n")))
 
         fig_width = max_length * 0.15
         fig_height = max(len(batch_games) * 0.6, 1)
-        
+
         fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-        ax.axis('off')
-        fig.patch.set_facecolor('white')
-        
-        ax.text(0, 0.5, "\n\n".join(text_lines), 
-                fontsize=12, ha='left', va='center', 
-                fontproperties=font_prop,
-                linespacing=1.5)
+        ax.axis("off")
+        fig.patch.set_facecolor("white")
+
+        ax.text(
+            0,
+            0.5,
+            "\n\n".join(text_lines),
+            fontsize=12,
+            ha="left",
+            va="center",
+            fontproperties=font_prop,
+            linespacing=1.5,
+        )
 
         buf = io.BytesIO()
         try:
-            plt.savefig(buf, format='png', bbox_inches='tight', transparent=False, dpi=120)
+            plt.savefig(
+                buf, format="png", bbox_inches="tight", transparent=False, dpi=120
+            )
             buf.seek(0)
-            
+
             batch_info = f"第 {batch_num + 1}/{total_batches} 页"
-            forward_messages.append({
-                "type": "node",
-                "data": {
-                    "name": "老婆统计",
-                    "uin": bot.self_id,
-                    "content": MessageSegment.image(buf) + MessageSegment.text(f"\n{batch_info}")
+            forward_messages.append(
+                {
+                    "type": "node",
+                    "data": {
+                        "name": "老婆统计",
+                        "uin": bot.self_id,
+                        "content": MessageSegment.image(buf)
+                        + MessageSegment.text(f"\n{batch_info}"),
+                    },
                 }
-            })
-            
+            )
+
         finally:
             buf.close()
             plt.close(fig)
-    
-    await bot.send_group_forward_msg(
-        group_id=event.group_id,
-        messages=forward_messages
-    )
+
+    await bot.send_group_forward_msg(group_id=event.group_id, messages=forward_messages)
+
 
 def calculate_game_stats(images: List[str]) -> Dict[str, Dict[str, Union[int, float]]]:
     """
     计算游戏统计信息
-    
+
     Args:
         images: 图片文件名列表
-        
+
     Returns:
         Dict: 包含每个游戏统计信息的字典
             {
@@ -867,7 +980,7 @@ def calculate_game_stats(images: List[str]) -> Dict[str, Dict[str, Union[int, fl
                     "characters": set(),
                     "percentage": 0,
                     "char_count": 0,
-                    "avg_skins": 0
+                    "avg_skins": 0,
                 }
             game_stats[game_name]["count"] += 1
             if len(parts) > 1:
@@ -877,11 +990,13 @@ def calculate_game_stats(images: List[str]) -> Dict[str, Dict[str, Union[int, fl
     for game_name, stats in game_stats.items():
         count = stats["count"]
         char_count = len(stats["characters"])
-        stats.update({
-            "percentage": (count / total_images) * 100,
-            "char_count": char_count,
-            "avg_skins": count / char_count if char_count > 0 else 0
-        })
+        stats.update(
+            {
+                "percentage": (count / total_images) * 100,
+                "char_count": char_count,
+                "avg_skins": count / char_count if char_count > 0 else 0,
+            }
+        )
 
     return game_stats
 
@@ -893,7 +1008,9 @@ class DeepDanbooruModel(nn.Module):
 
         self.tags = []
 
-        self.n_Conv_0 = nn.Conv2d(kernel_size=(7, 7), in_channels=3, out_channels=64, stride=(2, 2))
+        self.n_Conv_0 = nn.Conv2d(
+            kernel_size=(7, 7), in_channels=3, out_channels=64, stride=(2, 2)
+        )
         self.n_MaxPool_0 = nn.MaxPool2d(kernel_size=(3, 3), stride=(2, 2))
         self.n_Conv_1 = nn.Conv2d(kernel_size=(1, 1), in_channels=64, out_channels=256)
         self.n_Conv_2 = nn.Conv2d(kernel_size=(1, 1), in_channels=64, out_channels=64)
@@ -905,182 +1022,518 @@ class DeepDanbooruModel(nn.Module):
         self.n_Conv_8 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=64)
         self.n_Conv_9 = nn.Conv2d(kernel_size=(3, 3), in_channels=64, out_channels=64)
         self.n_Conv_10 = nn.Conv2d(kernel_size=(1, 1), in_channels=64, out_channels=256)
-        self.n_Conv_11 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=512, stride=(2, 2))
-        self.n_Conv_12 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=128)
-        self.n_Conv_13 = nn.Conv2d(kernel_size=(3, 3), in_channels=128, out_channels=128, stride=(2, 2))
-        self.n_Conv_14 = nn.Conv2d(kernel_size=(1, 1), in_channels=128, out_channels=512)
-        self.n_Conv_15 = nn.Conv2d(kernel_size=(1, 1), in_channels=512, out_channels=128)
-        self.n_Conv_16 = nn.Conv2d(kernel_size=(3, 3), in_channels=128, out_channels=128)
-        self.n_Conv_17 = nn.Conv2d(kernel_size=(1, 1), in_channels=128, out_channels=512)
-        self.n_Conv_18 = nn.Conv2d(kernel_size=(1, 1), in_channels=512, out_channels=128)
-        self.n_Conv_19 = nn.Conv2d(kernel_size=(3, 3), in_channels=128, out_channels=128)
-        self.n_Conv_20 = nn.Conv2d(kernel_size=(1, 1), in_channels=128, out_channels=512)
-        self.n_Conv_21 = nn.Conv2d(kernel_size=(1, 1), in_channels=512, out_channels=128)
-        self.n_Conv_22 = nn.Conv2d(kernel_size=(3, 3), in_channels=128, out_channels=128)
-        self.n_Conv_23 = nn.Conv2d(kernel_size=(1, 1), in_channels=128, out_channels=512)
-        self.n_Conv_24 = nn.Conv2d(kernel_size=(1, 1), in_channels=512, out_channels=128)
-        self.n_Conv_25 = nn.Conv2d(kernel_size=(3, 3), in_channels=128, out_channels=128)
-        self.n_Conv_26 = nn.Conv2d(kernel_size=(1, 1), in_channels=128, out_channels=512)
-        self.n_Conv_27 = nn.Conv2d(kernel_size=(1, 1), in_channels=512, out_channels=128)
-        self.n_Conv_28 = nn.Conv2d(kernel_size=(3, 3), in_channels=128, out_channels=128)
-        self.n_Conv_29 = nn.Conv2d(kernel_size=(1, 1), in_channels=128, out_channels=512)
-        self.n_Conv_30 = nn.Conv2d(kernel_size=(1, 1), in_channels=512, out_channels=128)
-        self.n_Conv_31 = nn.Conv2d(kernel_size=(3, 3), in_channels=128, out_channels=128)
-        self.n_Conv_32 = nn.Conv2d(kernel_size=(1, 1), in_channels=128, out_channels=512)
-        self.n_Conv_33 = nn.Conv2d(kernel_size=(1, 1), in_channels=512, out_channels=128)
-        self.n_Conv_34 = nn.Conv2d(kernel_size=(3, 3), in_channels=128, out_channels=128)
-        self.n_Conv_35 = nn.Conv2d(kernel_size=(1, 1), in_channels=128, out_channels=512)
-        self.n_Conv_36 = nn.Conv2d(kernel_size=(1, 1), in_channels=512, out_channels=1024, stride=(2, 2))
-        self.n_Conv_37 = nn.Conv2d(kernel_size=(1, 1), in_channels=512, out_channels=256)
-        self.n_Conv_38 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256, stride=(2, 2))
-        self.n_Conv_39 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_40 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_41 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_42 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_43 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_44 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_45 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_46 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_47 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_48 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_49 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_50 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_51 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_52 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_53 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_54 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_55 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_56 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_57 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_58 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_59 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_60 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_61 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_62 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_63 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_64 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_65 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_66 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_67 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_68 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_69 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_70 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_71 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_72 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_73 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_74 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_75 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_76 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_77 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_78 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_79 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_80 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_81 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_82 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_83 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_84 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_85 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_86 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_87 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_88 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_89 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_90 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_91 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_92 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_93 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_94 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_95 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_96 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_97 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_98 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256, stride=(2, 2))
-        self.n_Conv_99 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_100 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=1024, stride=(2, 2))
-        self.n_Conv_101 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_102 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_103 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_104 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_105 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_106 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_107 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_108 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_109 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_110 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_111 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_112 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_113 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_114 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_115 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_116 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_117 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_118 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_119 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_120 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_121 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_122 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_123 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_124 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_125 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_126 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_127 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_128 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_129 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_130 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_131 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_132 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_133 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_134 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_135 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_136 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_137 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_138 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_139 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_140 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_141 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_142 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_143 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_144 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_145 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_146 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_147 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_148 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_149 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_150 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_151 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_152 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_153 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_154 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_155 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=256)
-        self.n_Conv_156 = nn.Conv2d(kernel_size=(3, 3), in_channels=256, out_channels=256)
-        self.n_Conv_157 = nn.Conv2d(kernel_size=(1, 1), in_channels=256, out_channels=1024)
-        self.n_Conv_158 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=2048, stride=(2, 2))
-        self.n_Conv_159 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=512)
-        self.n_Conv_160 = nn.Conv2d(kernel_size=(3, 3), in_channels=512, out_channels=512, stride=(2, 2))
-        self.n_Conv_161 = nn.Conv2d(kernel_size=(1, 1), in_channels=512, out_channels=2048)
-        self.n_Conv_162 = nn.Conv2d(kernel_size=(1, 1), in_channels=2048, out_channels=512)
-        self.n_Conv_163 = nn.Conv2d(kernel_size=(3, 3), in_channels=512, out_channels=512)
-        self.n_Conv_164 = nn.Conv2d(kernel_size=(1, 1), in_channels=512, out_channels=2048)
-        self.n_Conv_165 = nn.Conv2d(kernel_size=(1, 1), in_channels=2048, out_channels=512)
-        self.n_Conv_166 = nn.Conv2d(kernel_size=(3, 3), in_channels=512, out_channels=512)
-        self.n_Conv_167 = nn.Conv2d(kernel_size=(1, 1), in_channels=512, out_channels=2048)
-        self.n_Conv_168 = nn.Conv2d(kernel_size=(1, 1), in_channels=2048, out_channels=4096, stride=(2, 2))
-        self.n_Conv_169 = nn.Conv2d(kernel_size=(1, 1), in_channels=2048, out_channels=1024)
-        self.n_Conv_170 = nn.Conv2d(kernel_size=(3, 3), in_channels=1024, out_channels=1024, stride=(2, 2))
-        self.n_Conv_171 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=4096)
-        self.n_Conv_172 = nn.Conv2d(kernel_size=(1, 1), in_channels=4096, out_channels=1024)
-        self.n_Conv_173 = nn.Conv2d(kernel_size=(3, 3), in_channels=1024, out_channels=1024)
-        self.n_Conv_174 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=4096)
-        self.n_Conv_175 = nn.Conv2d(kernel_size=(1, 1), in_channels=4096, out_channels=1024)
-        self.n_Conv_176 = nn.Conv2d(kernel_size=(3, 3), in_channels=1024, out_channels=1024)
-        self.n_Conv_177 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=4096)
-        self.n_Conv_178 = nn.Conv2d(kernel_size=(1, 1), in_channels=4096, out_channels=9176, bias=False)
+        self.n_Conv_11 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=512, stride=(2, 2)
+        )
+        self.n_Conv_12 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=128
+        )
+        self.n_Conv_13 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=128, out_channels=128, stride=(2, 2)
+        )
+        self.n_Conv_14 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=128, out_channels=512
+        )
+        self.n_Conv_15 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=512, out_channels=128
+        )
+        self.n_Conv_16 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=128, out_channels=128
+        )
+        self.n_Conv_17 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=128, out_channels=512
+        )
+        self.n_Conv_18 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=512, out_channels=128
+        )
+        self.n_Conv_19 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=128, out_channels=128
+        )
+        self.n_Conv_20 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=128, out_channels=512
+        )
+        self.n_Conv_21 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=512, out_channels=128
+        )
+        self.n_Conv_22 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=128, out_channels=128
+        )
+        self.n_Conv_23 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=128, out_channels=512
+        )
+        self.n_Conv_24 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=512, out_channels=128
+        )
+        self.n_Conv_25 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=128, out_channels=128
+        )
+        self.n_Conv_26 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=128, out_channels=512
+        )
+        self.n_Conv_27 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=512, out_channels=128
+        )
+        self.n_Conv_28 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=128, out_channels=128
+        )
+        self.n_Conv_29 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=128, out_channels=512
+        )
+        self.n_Conv_30 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=512, out_channels=128
+        )
+        self.n_Conv_31 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=128, out_channels=128
+        )
+        self.n_Conv_32 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=128, out_channels=512
+        )
+        self.n_Conv_33 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=512, out_channels=128
+        )
+        self.n_Conv_34 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=128, out_channels=128
+        )
+        self.n_Conv_35 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=128, out_channels=512
+        )
+        self.n_Conv_36 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=512, out_channels=1024, stride=(2, 2)
+        )
+        self.n_Conv_37 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=512, out_channels=256
+        )
+        self.n_Conv_38 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256, stride=(2, 2)
+        )
+        self.n_Conv_39 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_40 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_41 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_42 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_43 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_44 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_45 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_46 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_47 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_48 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_49 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_50 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_51 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_52 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_53 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_54 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_55 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_56 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_57 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_58 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_59 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_60 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_61 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_62 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_63 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_64 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_65 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_66 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_67 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_68 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_69 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_70 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_71 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_72 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_73 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_74 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_75 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_76 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_77 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_78 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_79 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_80 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_81 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_82 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_83 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_84 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_85 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_86 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_87 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_88 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_89 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_90 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_91 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_92 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_93 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_94 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_95 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_96 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_97 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_98 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256, stride=(2, 2)
+        )
+        self.n_Conv_99 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_100 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=1024, stride=(2, 2)
+        )
+        self.n_Conv_101 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_102 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_103 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_104 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_105 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_106 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_107 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_108 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_109 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_110 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_111 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_112 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_113 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_114 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_115 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_116 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_117 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_118 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_119 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_120 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_121 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_122 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_123 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_124 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_125 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_126 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_127 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_128 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_129 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_130 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_131 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_132 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_133 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_134 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_135 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_136 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_137 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_138 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_139 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_140 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_141 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_142 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_143 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_144 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_145 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_146 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_147 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_148 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_149 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_150 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_151 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_152 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_153 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_154 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_155 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=256
+        )
+        self.n_Conv_156 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=256, out_channels=256
+        )
+        self.n_Conv_157 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=256, out_channels=1024
+        )
+        self.n_Conv_158 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=2048, stride=(2, 2)
+        )
+        self.n_Conv_159 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=512
+        )
+        self.n_Conv_160 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=512, out_channels=512, stride=(2, 2)
+        )
+        self.n_Conv_161 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=512, out_channels=2048
+        )
+        self.n_Conv_162 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=2048, out_channels=512
+        )
+        self.n_Conv_163 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=512, out_channels=512
+        )
+        self.n_Conv_164 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=512, out_channels=2048
+        )
+        self.n_Conv_165 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=2048, out_channels=512
+        )
+        self.n_Conv_166 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=512, out_channels=512
+        )
+        self.n_Conv_167 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=512, out_channels=2048
+        )
+        self.n_Conv_168 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=2048, out_channels=4096, stride=(2, 2)
+        )
+        self.n_Conv_169 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=2048, out_channels=1024
+        )
+        self.n_Conv_170 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=1024, out_channels=1024, stride=(2, 2)
+        )
+        self.n_Conv_171 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=4096
+        )
+        self.n_Conv_172 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=4096, out_channels=1024
+        )
+        self.n_Conv_173 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=1024, out_channels=1024
+        )
+        self.n_Conv_174 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=4096
+        )
+        self.n_Conv_175 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=4096, out_channels=1024
+        )
+        self.n_Conv_176 = nn.Conv2d(
+            kernel_size=(3, 3), in_channels=1024, out_channels=1024
+        )
+        self.n_Conv_177 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=1024, out_channels=4096
+        )
+        self.n_Conv_178 = nn.Conv2d(
+            kernel_size=(1, 1), in_channels=4096, out_channels=9176, bias=False
+        )
 
     def forward(self, *inputs):
-        t_358, = inputs
+        (t_358,) = inputs
         t_359 = t_358.permute(*[0, 3, 1, 2])
         t_359_padded = F.pad(t_359, [2, 3, 2, 3], value=0)
         t_360 = self.n_Conv_0(t_359_padded)
         t_361 = F.relu(t_360)
-        t_361 = F.pad(t_361, [0, 1, 0, 1], value=float('-inf'))
+        t_361 = F.pad(t_361, [0, 1, 0, 1], value=float("-inf"))
         t_362 = self.n_MaxPool_0(t_361)
         t_363 = self.n_Conv_1(t_362)
         t_364 = self.n_Conv_2(t_362)
@@ -1552,7 +2005,8 @@ class DeepDanbooruModel(nn.Module):
         return t_771
 
     def load_state_dict(self, state_dict, **kwargs):
-        self.tags = state_dict.get('tags', [])
+        self.tags = state_dict.get("tags", [])
 
-        super(DeepDanbooruModel, self).load_state_dict({k: v for k, v in state_dict.items() if k != 'tags'})
-
+        super(DeepDanbooruModel, self).load_state_dict(
+            {k: v for k, v in state_dict.items() if k != "tags"}
+        )

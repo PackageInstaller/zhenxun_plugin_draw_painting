@@ -111,3 +111,6 @@ games:
   - name: HorizonWalker
     aliases:
       - 地平线行者
+  - name: 记忆法则：白色幻影
+    aliases:
+      - 白影
