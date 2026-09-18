@@ -6,10 +6,50 @@ from urllib.parse import quote
 import uuid
 
 from rich.markup import escape
-
+import boto3
+from botocore.client import Config as BotoConfig
+from ..config import plugin_config
 from .package_archive import _new_progress
 
 PACKAGE_TTL_SECONDS = 24 * 60 * 60
+
+class OscaOSS:
+    """OSCA 联盟云 S3 兼容存储封装。"""
+
+    def __init__(self) -> None:
+        cfg = plugin_config
+        self.bucket = cfg.realcugan_oss_bucket
+        self.prefix = cfg.realcugan_oss_prefix.lstrip("/")
+        if self.prefix and not self.prefix.endswith("/"):
+            self.prefix += "/"
+        self.url_expires = cfg.realcugan_oss_url_expires
+        self.client = boto3.client(
+            "s3",
+            endpoint_url=cfg.realcugan_oss_endpoint,
+            aws_access_key_id=cfg.realcugan_oss_access_key,
+            aws_secret_access_key=cfg.realcugan_oss_secret_key,
+            region_name="us-east-1",
+            use_ssl=cfg.realcugan_oss_endpoint.startswith("https"),
+            config=BotoConfig(signature_version="s3v4"),
+        )
+
+    def object_key(self, filename: str) -> str:
+        return f"{self.prefix}{filename}"
+
+    def upload_file(self, local_path: Path, object_key: str) -> str:
+        """上传文件并返回 1 天有效的预签名下载链接。"""
+        self.client.upload_file(str(local_path), self.bucket, object_key)
+        return self.presign(object_key)
+
+    def presign(self, object_key: str) -> str:
+        return self.client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": self.bucket, "Key": object_key},
+            ExpiresIn=self.url_expires,
+        )
+
+    def delete(self, object_key: str) -> None:
+        self.client.delete_object(Bucket=self.bucket, Key=object_key)
 
 
 class PaintingPackageStorage:
@@ -20,11 +60,8 @@ class PaintingPackageStorage:
         self._backend = None
 
     def _get_backend(self):
-        if self._backend is None:
-            # Lazy import avoids loading the RealCUGAN model during plugin import.
-            from zhenxun.plugins.nonebot_plugin_realcugan.oss import OscaOSS
 
-            self._backend = OscaOSS()
+        self._backend = OscaOSS()
         return self._backend
 
     def upload(self, archive_path: Path, download_name: str) -> tuple[str, str]:
