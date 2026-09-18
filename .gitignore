@@ -164,7 +164,14 @@ cython_debug/
 wives/*.png
 husbands/*.png
 drop/*.png
+others/
+data/others_archive_*.json
 *.pt
+*.onnx
+model/wd-swinv2-tagger-v3/selected_tags.csv
+model/*
+data/image_features.db*
+*.db
 middlewares
 temp/*
 documents/*.xlsx

@@ -1,0 +1,695 @@
+categories:
+  性别构成:
+    - tag: 1girl
+      name: 单女
+      aliases: [女性, 女生, 女角色]
+    - tag: 1boy
+      name: 单男
+      aliases: [男性, 男生, 男角色]
+    - tag: multiple_girls
+      name: 画面多女
+      aliases: [多女, 多名女性]
+    - tag: multiple_boys
+      name: 画面多男
+      aliases: [多男, 多名男性]
+    - tag: male_focus
+      name: 男性主体
+      aliases: [男主视角]
+
+  胸部:
+    - {tag: breasts, name: 胸部, aliases: []}
+    - tag: flat_chest
+      name: 平胸
+      aliases: [无胸]
+    - tag: small_breasts
+      name: 小胸
+      aliases: [贫乳]
+    - tag: medium_breasts
+      name: 中胸
+      aliases: [中等胸部]
+    - tag: large_breasts
+      name: 大胸
+      aliases: [丰满胸部]
+    - tag: huge_breasts
+      name: 超大胸
+      aliases: [巨乳]
+    - tag: cleavage
+      name: 乳沟
+      aliases: []
+    - tag: breasts_apart
+      name: 胸部分开
+      aliases: []
+    - tag: sagging_breasts
+      name: 胸部下垂
+      aliases: []
+
+  体型:
+    - tag: petite
+      name: 娇小
+      aliases: [小个子]
+    - tag: skinny
+      name: 消瘦
+      aliases: [骨感]
+    - tag: curvy
+      name: 曲线身材
+      aliases: [曲线]
+    - tag: plump
+      name: 丰满身材
+      aliases: [丰腴]
+    - tag: fat
+      name: 肥胖
+      aliases: [胖]
+    - tag: muscular
+      name: 肌肉
+      aliases: [肌肉身材]
+    - tag: toned
+      name: 健美
+      aliases: [紧实]
+    - tag: abs
+      name: 腹肌
+      aliases: []
+    - tag: wide_hips
+      name: 宽胯
+      aliases: [宽臀]
+    - tag: narrow_waist
+      name: 细腰
+      aliases: [窄腰]
+    - tag: thick_thighs
+      name: 粗大腿
+      aliases: [粗腿, 丰满大腿]
+    - tag: tall
+      name: 高挑
+      aliases: [高个子]
+
+  皮肤:
+    - tag: pale_skin
+      name: 白皙皮肤
+      aliases: [白皮, 苍白皮肤]
+    - tag: dark_skin
+      name: 深色皮肤
+      aliases: [黑皮]
+    - tag: tan
+      name: 小麦色皮肤
+      aliases: [晒黑, 古铜色皮肤]
+    - tag: freckles
+      name: 雀斑
+      aliases: []
+    - tag: mole
+      name: 痣
+      aliases: []
+    - tag: colored_skin
+      name: 彩色皮肤
+      aliases: [异色皮肤]
+
+  头发长度:
+    - tag: very_short_hair
+      name: 超短发
+      aliases: []
+    - tag: short_hair
+      name: 短发
+      aliases: []
+    - tag: medium_hair
+      name: 中长发
+      aliases: [中发]
+    - tag: long_hair
+      name: 长发
+      aliases: []
+    - tag: very_long_hair
+      name: 超长发
+      aliases: []
+    - tag: absurdly_long_hair
+      name: 极长发
+      aliases: [拖地长发]
+    - tag: bald
+      name: 光头
+      aliases: [无发]
+
+  发色:
+    - tag: black_hair
+      name: 黑发
+      aliases: [黑毛]
+    - tag: brown_hair
+      name: 棕发
+      aliases: [褐发]
+    - tag: blonde_hair
+      name: 金发
+      aliases: [黄发, 金毛]
+    - tag: red_hair
+      name: 红发
+      aliases: [红毛]
+    - tag: orange_hair
+      name: 橙发
+      aliases: []
+    - tag: green_hair
+      name: 绿发
+      aliases: [绿毛]
+    - tag: blue_hair
+      name: 蓝发
+      aliases: [蓝毛]
+    - tag: purple_hair
+      name: 紫发
+      aliases: [紫毛]
+    - tag: pink_hair
+      name: 粉发
+      aliases: [粉毛]
+    - tag: white_hair
+      name: 白发
+      aliases: [白毛]
+    - tag: grey_hair
+      name: 灰发
+      aliases: [灰毛, 银发]
+    - tag: multicolored_hair
+      name: 多彩发
+      aliases: [多色头发]
+    - tag: two-tone_hair
+      name: 双色发
+      aliases: [双色头发]
+    - tag: gradient_hair
+      name: 渐变发
+      aliases: [渐变头发]
+
+  发型:
+    - {tag: no_bangs, name: 无刘海, aliases: [露额头]}
+    - {tag: hair_between_eyes, name: 眼间刘海, aliases: [两眼间头发]}
+    - {tag: swept_bangs, name: 斜刘海, aliases: [侧扫刘海]}
+    - {tag: asymmetrical_bangs, name: 不对称刘海, aliases: []}
+    - {tag: hair_intakes, name: 翘起发根, aliases: [进气口发型]}
+    - {tag: floating_hair, name: 飘动头发, aliases: [飘发]}
+    - {tag: messy_hair, name: 凌乱头发, aliases: [乱发]}
+    - {tag: wavy_hair, name: 波浪发, aliases: [波浪卷发]}
+    - {tag: straight_hair, name: 直发, aliases: []}
+    - {tag: curly_hair, name: 卷发, aliases: []}
+    - {tag: hair_flaps, name: 外翘发束, aliases: []}
+    - {tag: side_braid, name: 侧辫, aliases: [侧编发]}
+    - {tag: low_ponytail, name: 低马尾, aliases: []}
+    - {tag: high_ponytail, name: 高马尾, aliases: []}
+    - tag: ponytail
+      name: 马尾
+      aliases: []
+    - tag: twintails
+      name: 双马尾
+      aliases: []
+    - tag: side_ponytail
+      name: 侧马尾
+      aliases: []
+    - tag: braid
+      name: 辫子
+      aliases: [编发]
+    - tag: single_braid
+      name: 单辫
+      aliases: []
+    - tag: twin_braids
+      name: 双辫
+      aliases: []
+    - tag: bob_cut
+      name: 波波头
+      aliases: [波波短发]
+    - tag: hair_bun
+      name: 发髻
+      aliases: [丸子头]
+    - tag: double_bun
+      name: 双丸子头
+      aliases: [双发髻]
+    - tag: ahoge
+      name: 呆毛
+      aliases: []
+    - tag: drill_hair
+      name: 钻头卷
+      aliases: [螺旋卷]
+    - tag: hair_over_one_eye
+      name: 遮单眼发
+      aliases: [头发遮眼]
+    - tag: blunt_bangs
+      name: 齐刘海
+      aliases: []
+    - tag: parted_bangs
+      name: 中分刘海
+      aliases: [分刘海]
+    - tag: sidelocks
+      name: 鬓发
+      aliases: []
+
+  眼睛:
+    - {tag: half-closed_eyes, name: 半闭眼, aliases: [半眯眼]}
+    - {tag: glowing_eyes, name: 发光眼睛, aliases: [发光瞳]}
+    - {tag: slit_pupils, name: 竖瞳, aliases: []}
+    - {tag: star-shaped_pupils, name: 星形瞳孔, aliases: [星星瞳]}
+    - {tag: heart-shaped_pupils, name: 心形瞳孔, aliases: [爱心瞳]}
+    - {tag: eyelashes, name: 睫毛, aliases: []}
+    - {tag: long_eyelashes, name: 长睫毛, aliases: []}
+    - {tag: thick_eyebrows, name: 浓眉, aliases: []}
+    - tag: black_eyes
+      name: 黑瞳
+      aliases: [黑眼]
+    - tag: brown_eyes
+      name: 棕瞳
+      aliases: [褐瞳]
+    - tag: blue_eyes
+      name: 蓝瞳
+      aliases: [蓝眼]
+    - tag: red_eyes
+      name: 红瞳
+      aliases: [红眼]
+    - tag: green_eyes
+      name: 绿瞳
+      aliases: [绿眼]
+    - tag: yellow_eyes
+      name: 黄瞳
+      aliases: [金瞳]
+    - tag: purple_eyes
+      name: 紫瞳
+      aliases: [紫眼]
+    - tag: pink_eyes
+      name: 粉瞳
+      aliases: [粉眼]
+    - tag: orange_eyes
+      name: 橙瞳
+      aliases: []
+    - tag: aqua_eyes
+      name: 青瞳
+      aliases: [水色眼睛]
+    - tag: grey_eyes
+      name: 灰瞳
+      aliases: [银瞳]
+    - tag: heterochromia
+      name: 异色瞳
+      aliases: [鸳鸯眼]
+    - tag: multicolored_eyes
+      name: 多彩瞳
+      aliases: [多色眼睛]
+    - tag: closed_eyes
+      name: 闭眼
+      aliases: [双眼闭合]
+    - tag: one_eye_closed
+      name: 单眼闭合
+      aliases: [眨眼]
+
+  面部:
+    - {tag: lipstick, name: 口红, aliases: [唇膏]}
+    - {tag: eyeshadow, name: 眼影, aliases: []}
+    - {tag: scar, name: 伤疤, aliases: [疤痕]}
+    - {tag: scar_on_face, name: 面部伤疤, aliases: [脸部疤痕]}
+    - {tag: mole_under_eye, name: 泪痣, aliases: [眼下痣]}
+    - tag: facial_hair
+      name: 面部毛发
+      aliases: []
+    - tag: beard
+      name: 胡须
+      aliases: [络腮胡]
+    - tag: mustache
+      name: 小胡子
+      aliases: [八字胡]
+    - tag: fang
+      name: 虎牙
+      aliases: [尖牙]
+    - tag: teeth
+      name: 露齿
+      aliases: [牙齿]
+    - tag: lips
+      name: 嘴唇
+      aliases: [厚唇]
+    - tag: makeup
+      name: 化妆
+      aliases: [妆容]
+    - tag: blush
+      name: 脸红
+      aliases: [红晕]
+
+  耳朵与幻想特征:
+    - {tag: elf, name: 精灵, aliases: []}
+    - {tag: angel, name: 天使, aliases: []}
+    - {tag: demon_girl, name: 恶魔女孩, aliases: [恶魔娘]}
+    - {tag: mechanical_wings, name: 机械翅膀, aliases: [机械翼]}
+    - {tag: feathered_wings, name: 羽毛翅膀, aliases: [羽翼]}
+    - {tag: bat_wings, name: 蝙蝠翅膀, aliases: [蝠翼]}
+    - {tag: dragon_wings, name: 龙翼, aliases: []}
+    - {tag: cat_tail, name: 猫尾, aliases: []}
+    - {tag: fox_tail, name: 狐尾, aliases: []}
+    - {tag: multiple_tails, name: 多尾, aliases: [多条尾巴]}
+    - tag: pointy_ears
+      name: 尖耳
+      aliases: [尖耳朵]
+    - tag: animal_ears
+      name: 兽耳
+      aliases: [动物耳朵]
+    - tag: cat_ears
+      name: 猫耳
+      aliases: []
+    - tag: dog_ears
+      name: 狗耳
+      aliases: [犬耳]
+    - tag: fox_ears
+      name: 狐耳
+      aliases: [狐狸耳朵]
+    - tag: rabbit_ears
+      name: 兔耳
+      aliases: [兔子耳朵]
+    - tag: horns
+      name: 角
+      aliases: [犄角]
+    - tag: tail
+      name: 尾巴
+      aliases: []
+    - tag: wings
+      name: 翅膀
+      aliases: [翼]
+    - tag: halo
+      name: 光环
+      aliases: []
+
+  可见身体部位:
+    - {tag: bare_shoulders, name: 露肩, aliases: [裸肩]}
+    - {tag: back, name: 背部, aliases: []}
+    - {tag: bare_arms, name: 裸臂, aliases: [露出手臂]}
+    - {tag: fingernails, name: 指甲, aliases: []}
+    - {tag: nail_polish, name: 指甲油, aliases: [美甲]}
+    - {tag: black_nails, name: 黑色指甲, aliases: [黑甲]}
+    - {tag: tattoo, name: 纹身, aliases: []}
+    - tag: navel
+      name: 肚脐
+      aliases: []
+    - tag: armpits
+      name: 腋下
+      aliases: [腋窝]
+    - tag: collarbone
+      name: 锁骨
+      aliases: []
+    - tag: midriff
+      name: 露腰
+      aliases: [腹部]
+    - tag: thighs
+      name: 大腿
+      aliases: []
+    - tag: legs
+      name: 腿部
+      aliases: [腿]
+    - tag: feet
+      name: 足部
+      aliases: [脚]
+
+  年龄外观:
+    - tag: child
+      name: 儿童外观
+      aliases: [幼年]
+    - tag: mature_female
+      name: 成熟女性
+      aliases: [熟女]
+    - tag: mature_male
+      name: 成熟男性
+      aliases: [熟男]
+    - tag: old_woman
+      name: 老年女性
+      aliases: [老妇]
+    - tag: old_man
+      name: 老年男性
+      aliases: [老者]
+
+  服饰:
+    - {tag: white_dress, name: 白色连衣裙, aliases: [白连衣裙]}
+    - {tag: blue_dress, name: 蓝色连衣裙, aliases: []}
+    - {tag: red_dress, name: 红色连衣裙, aliases: []}
+    - {tag: pink_dress, name: 粉色连衣裙, aliases: []}
+    - {tag: black_shirt, name: 黑色衬衫, aliases: []}
+    - {tag: white_shirt, name: 白色衬衫, aliases: []}
+    - {tag: black_jacket, name: 黑色夹克, aliases: []}
+    - {tag: white_jacket, name: 白色夹克, aliases: []}
+    - {tag: black_skirt, name: 黑色半身裙, aliases: []}
+    - {tag: plaid, name: 格纹, aliases: [格子图案]}
+    - {tag: plaid_clothes, name: 格纹服装, aliases: [格子衣服]}
+    - {tag: plaid_shirt, name: 格纹衬衫, aliases: [格子衬衫]}
+    - {tag: plaid_skirt, name: 格纹半身裙, aliases: [格子裙]}
+    - {tag: striped_clothes, name: 条纹服装, aliases: [条纹衣服]}
+    - {tag: short_sleeves, name: 短袖, aliases: []}
+    - {tag: sleeveless, name: 无袖, aliases: []}
+    - {tag: detached_sleeves, name: 分离式袖子, aliases: [分离袖, 独立袖]}
+    - {tag: wide_sleeves, name: 宽袖, aliases: []}
+    - {tag: puffy_sleeves, name: 泡泡袖, aliases: [蓬松袖]}
+    - {tag: sleeves_past_wrists, name: 袖子遮手腕, aliases: []}
+    - {tag: open_jacket, name: 敞开夹克, aliases: []}
+    - {tag: off_shoulder, name: 一字肩服装, aliases: [一字肩]}
+    - {tag: clothing_cutout, name: 镂空服装, aliases: [服装镂空]}
+    - {tag: navel_cutout, name: 肚脐镂空, aliases: [露脐开口]}
+    - {tag: frills, name: 荷叶边, aliases: [褶边]}
+    - {tag: lace_trim, name: 蕾丝饰边, aliases: [蕾丝边]}
+    - {tag: gold_trim, name: 金色饰边, aliases: [金边]}
+    - {tag: ribbon, name: 丝带, aliases: [缎带]}
+    - {tag: bow, name: 蝴蝶结, aliases: []}
+    - {tag: necktie, name: 领带, aliases: []}
+    - {tag: bowtie, name: 领结, aliases: []}
+    - {tag: sailor_collar, name: 水手领, aliases: []}
+    - {tag: serafuku, name: 水手服, aliases: []}
+    - {tag: blazer, name: 西装外套, aliases: []}
+    - {tag: suit, name: 西装, aliases: []}
+    - {tag: vest, name: 马甲, aliases: [背心外套]}
+    - {tag: leotard, name: 连体紧身衣, aliases: []}
+    - {tag: bodysuit, name: 全身紧身衣, aliases: []}
+    - {tag: capelet, name: 短披肩, aliases: []}
+    - {tag: hood, name: 兜帽, aliases: []}
+    - {tag: scarf, name: 围巾, aliases: []}
+    - {tag: sash, name: 腰带布, aliases: [束腰布带]}
+    - {tag: belt, name: 皮带, aliases: [腰带]}
+    - {tag: shoulder_armor, name: 肩甲, aliases: []}
+    - {tag: gauntlets, name: 手甲, aliases: [铠甲手套]}
+    - {tag: breastplate, name: 胸甲, aliases: []}
+    - {tag: black_dress, name: 黑色连衣裙, aliases: []}
+    - {tag: black_pants, name: 黑色长裤, aliases: [黑裤]}
+    - {tag: long_sleeves, name: 长袖, aliases: []}
+    - {tag: open_clothes, name: 敞开衣服, aliases: []}
+    - {tag: fur_trim, name: 毛绒饰边, aliases: []}
+    - {tag: plunging_neckline, name: 深V领, aliases: []}
+    - {tag: dress, name: 连衣裙, aliases: [裙装]}
+    - {tag: skirt, name: 半身裙, aliases: [裙子]}
+    - {tag: pleated_skirt, name: 百褶裙, aliases: []}
+    - {tag: shirt, name: 衬衫, aliases: []}
+    - {tag: t-shirt, name: T恤, aliases: [体恤]}
+    - {tag: jacket, name: 夹克, aliases: []}
+    - {tag: coat, name: 外套, aliases: [大衣]}
+    - {tag: hoodie, name: 连帽衫, aliases: [卫衣]}
+    - {tag: sweater, name: 毛衣, aliases: []}
+    - {tag: cardigan, name: 开衫, aliases: []}
+    - {tag: uniform, name: 制服, aliases: []}
+    - {tag: school_uniform, name: 校服, aliases: []}
+    - {tag: military_uniform, name: 军装, aliases: []}
+    - {tag: maid, name: 女仆装, aliases: [女仆]}
+    - {tag: kimono, name: 和服, aliases: []}
+    - {tag: chinese_clothes, name: 中式服装, aliases: []}
+    - {tag: china_dress, name: 旗袍, aliases: []}
+    - {tag: armor, name: 铠甲, aliases: [护甲]}
+    - {tag: cape, name: 披风, aliases: []}
+    - {tag: shorts, name: 短裤, aliases: []}
+    - {tag: pants, name: 长裤, aliases: []}
+    - {tag: swimsuit, name: 泳装, aliases: []}
+
+  配饰与鞋袜:
+    - {tag: shoes, name: 鞋子, aliases: []}
+    - {tag: sneakers, name: 运动鞋, aliases: [球鞋]}
+    - {tag: sandals, name: 凉鞋, aliases: []}
+    - {tag: loafers, name: 乐福鞋, aliases: []}
+    - {tag: mary_janes, name: 玛丽珍鞋, aliases: []}
+    - {tag: ankle_boots, name: 短靴, aliases: [踝靴]}
+    - {tag: knee_boots, name: 及膝靴, aliases: []}
+    - {tag: thigh_boots, name: 过膝靴, aliases: [长筒过膝靴]}
+    - {tag: black_footwear, name: 黑色鞋靴, aliases: [黑鞋]}
+    - {tag: white_footwear, name: 白色鞋靴, aliases: [白鞋]}
+    - {tag: red_footwear, name: 红色鞋靴, aliases: [红鞋]}
+    - {tag: black_thighhighs, name: 黑色过膝袜, aliases: []}
+    - {tag: white_thighhighs, name: 白色过膝袜, aliases: []}
+    - {tag: blue_thighhighs, name: 蓝色过膝袜, aliases: []}
+    - {tag: black_pantyhose, name: 黑色连裤袜, aliases: [黑色裤袜]}
+    - {tag: white_pantyhose, name: 白色连裤袜, aliases: [白色裤袜]}
+    - {tag: kneehighs, name: 及膝袜, aliases: []}
+    - {tag: ankle_socks, name: 短袜, aliases: [踝袜]}
+    - {tag: asymmetrical_legwear, name: 不对称腿饰, aliases: [不对称袜装]}
+    - {tag: leg_ribbon, name: 腿部丝带, aliases: [腿带]}
+    - {tag: garter_straps, name: 吊袜带, aliases: []}
+    - {tag: ring, name: 戒指, aliases: [指环]}
+    - {tag: brooch, name: 胸针, aliases: []}
+    - {tag: chain, name: 链条, aliases: [锁链]}
+    - {tag: pendant, name: 吊坠, aliases: []}
+    - {tag: tiara, name: 冠状头饰, aliases: [小王冠]}
+    - {tag: hair_bow, name: 蝴蝶结发饰, aliases: [发结]}
+    - {tag: hair_flower, name: 头戴花朵, aliases: [花朵发饰]}
+    - {tag: hair_bell, name: 发间铃铛, aliases: [铃铛发饰]}
+    - {tag: mask, name: 面罩, aliases: [面具]}
+    - {tag: eyepatch, name: 眼罩, aliases: []}
+    - {tag: helmet, name: 头盔, aliases: []}
+    - {tag: witch_hat, name: 魔女帽, aliases: [巫师帽]}
+    - {tag: peaked_cap, name: 大檐帽, aliases: []}
+    - {tag: bag, name: 包袋, aliases: []}
+    - {tag: backpack, name: 背包, aliases: []}
+    - {tag: hairband, name: 发箍, aliases: []}
+    - {tag: jewelry, name: 珠宝饰品, aliases: []}
+    - {tag: gem, name: 宝石, aliases: []}
+    - {tag: glasses, name: 眼镜, aliases: []}
+    - {tag: sunglasses, name: 墨镜, aliases: []}
+    - {tag: hair_ornament, name: 发饰, aliases: []}
+    - {tag: hair_ribbon, name: 发带, aliases: []}
+    - {tag: hairclip, name: 发夹, aliases: []}
+    - {tag: hat, name: 帽子, aliases: []}
+    - {tag: beret, name: 贝雷帽, aliases: []}
+    - {tag: crown, name: 皇冠, aliases: []}
+    - {tag: earrings, name: 耳饰, aliases: [耳环]}
+    - {tag: necklace, name: 项链, aliases: []}
+    - {tag: choker, name: 颈环, aliases: [颈饰]}
+    - {tag: bracelet, name: 手镯, aliases: []}
+    - {tag: gloves, name: 手套, aliases: []}
+    - {tag: fingerless_gloves, name: 露指手套, aliases: []}
+    - {tag: thighhighs, name: 过膝袜, aliases: []}
+    - {tag: pantyhose, name: 连裤袜, aliases: []}
+    - {tag: socks, name: 袜子, aliases: []}
+    - {tag: boots, name: 靴子, aliases: []}
+    - {tag: high_heels, name: 高跟鞋, aliases: []}
+    - {tag: barefoot, name: 赤脚, aliases: [光脚]}
+    - {tag: headphones, name: 耳机, aliases: []}
+
+  表情与姿态:
+    - {tag: looking_away, name: 看向别处, aliases: [移开视线]}
+    - {tag: looking_back, name: 回头看, aliases: [回眸]}
+    - {tag: looking_up, name: 向上看, aliases: [仰视]}
+    - {tag: looking_down, name: 向下看, aliases: [俯视]}
+    - {tag: head_tilt, name: 歪头, aliases: []}
+    - {tag: parted_lips, name: 微张嘴唇, aliases: [双唇微张]}
+    - {tag: smirk, name: 得意笑, aliases: [坏笑]}
+    - {tag: frown, name: 皱眉, aliases: []}
+    - {tag: pout, name: 噘嘴, aliases: [嘟嘴]}
+    - {tag: tears, name: 泪水, aliases: [眼泪]}
+    - {tag: sweat, name: 汗水, aliases: [流汗]}
+    - {tag: tongue_out, name: 吐舌, aliases: [伸舌头]}
+    - {tag: clenched_teeth, name: 咬紧牙齿, aliases: [咬牙]}
+    - {tag: arms_up, name: 双臂举起, aliases: [举双手]}
+    - {tag: arm_up, name: 单臂举起, aliases: [举单手]}
+    - {tag: outstretched_arm, name: 伸出手臂, aliases: [伸手]}
+    - {tag: arms_behind_back, name: 双手背后, aliases: []}
+    - {tag: hands_on_own_hips, name: 双手叉腰, aliases: []}
+    - {tag: hand_on_own_chest, name: 手放胸前, aliases: []}
+    - {tag: hand_on_own_head, name: 手放头上, aliases: []}
+    - {tag: waving, name: 挥手, aliases: []}
+    - {tag: pointing, name: 指向, aliases: [用手指向]}
+    - {tag: v, name: 比耶, aliases: [V字手势]}
+    - {tag: crossed_legs, name: 翘腿, aliases: [交叉双腿]}
+    - {tag: legs_apart, name: 双腿分开, aliases: []}
+    - {tag: bent_over, name: 弯腰, aliases: []}
+    - {tag: squatting, name: 蹲姿, aliases: [下蹲]}
+    - {tag: jumping, name: 跳跃, aliases: []}
+    - {tag: running, name: 奔跑, aliases: [跑步]}
+    - {tag: walking, name: 行走, aliases: [走路]}
+    - {tag: floating, name: 漂浮, aliases: [悬浮]}
+    - {tag: dancing, name: 舞蹈, aliases: [跳舞]}
+    - {tag: on_side, name: 侧躺, aliases: []}
+    - {tag: on_stomach, name: 趴卧, aliases: [俯卧]}
+    - {tag: sleeping, name: 睡眠, aliases: [睡觉]}
+    - {tag: on_back, name: 仰躺, aliases: []}
+    - {tag: closed_mouth, name: 闭嘴, aliases: []}
+    - {tag: holding, name: 手持物品, aliases: []}
+    - {tag: holding_umbrella, name: 撑伞, aliases: []}
+    - {tag: smile, name: 微笑, aliases: [笑容]}
+    - {tag: grin, name: 咧嘴笑, aliases: []}
+    - {tag: serious, name: 严肃, aliases: []}
+    - {tag: angry, name: 生气, aliases: []}
+    - {tag: crying, name: 哭泣, aliases: []}
+    - {tag: surprised, name: 惊讶, aliases: []}
+    - {tag: expressionless, name: 无表情, aliases: []}
+    - {tag: open_mouth, name: 张嘴, aliases: []}
+    - {tag: standing, name: 站立, aliases: []}
+    - {tag: sitting, name: 坐姿, aliases: []}
+    - {tag: kneeling, name: 跪姿, aliases: []}
+    - {tag: lying, name: 躺姿, aliases: []}
+    - {tag: crossed_arms, name: 抱臂, aliases: [交叉双臂]}
+    - {tag: hand_on_own_hip, name: 叉腰, aliases: []}
+    - {tag: looking_at_viewer, name: 看向观众, aliases: [直视]}
+
+  常见画面元素:
+    - {tag: water, name: 水, aliases: [水元素]}
+    - {tag: water_drop, name: 水滴, aliases: []}
+    - {tag: splashing, name: 飞溅水花, aliases: [水花]}
+    - {tag: bubble, name: 气泡, aliases: [泡泡]}
+    - {tag: fire, name: 火焰, aliases: [火, 烈焰]}
+    - {tag: ice, name: 冰, aliases: [冰块]}
+    - {tag: lightning, name: 闪电, aliases: [雷电]}
+    - {tag: wind, name: 风, aliases: []}
+    - {tag: smoke, name: 烟雾, aliases: []}
+    - {tag: magic, name: 魔法, aliases: []}
+    - {tag: magic_circle, name: 魔法阵, aliases: [法阵]}
+    - {tag: glowing, name: 发光, aliases: []}
+    - {tag: sparkle, name: 闪光, aliases: [闪光点]}
+    - {tag: petals, name: 花瓣, aliases: []}
+    - {tag: rose, name: 玫瑰, aliases: []}
+    - {tag: cherry_blossoms, name: 樱花, aliases: []}
+    - {tag: butterfly, name: 蝴蝶, aliases: []}
+    - {tag: bird, name: 鸟, aliases: [鸟类]}
+    - {tag: feathers, name: 羽毛, aliases: []}
+    - {tag: leaf, name: 叶子, aliases: [树叶]}
+    - {tag: tree, name: 树木, aliases: []}
+    - {tag: rock, name: 岩石, aliases: [石头]}
+    - {tag: crystal, name: 水晶, aliases: []}
+    - {tag: book, name: 书本, aliases: [书籍]}
+    - {tag: lantern, name: 灯笼, aliases: []}
+    - {tag: clock, name: 时钟, aliases: []}
+    - {tag: animal, name: 动物, aliases: []}
+    - {tag: flower, name: 花朵, aliases: [鲜花]}
+    - {tag: grass, name: 草地, aliases: []}
+    - {tag: umbrella, name: 雨伞, aliases: []}
+    - {tag: rain, name: 下雨, aliases: [雨天]}
+    - {tag: solo, name: 区域单人, aliases: []}
+
+  武器与持物:
+    - {tag: weapon, name: 武器, aliases: [兵器]}
+    - {tag: sword, name: 剑, aliases: [剑类武器]}
+    - {tag: katana, name: 武士刀, aliases: [日本刀]}
+    - {tag: sheath, name: 刀鞘, aliases: [剑鞘]}
+    - {tag: sheathed, name: 武器入鞘, aliases: [收刀入鞘]}
+    - {tag: dagger, name: 匕首, aliases: [短刃]}
+    - {tag: spear, name: 长矛, aliases: [长枪武器]}
+    - {tag: polearm, name: 长柄武器, aliases: []}
+    - {tag: axe, name: 斧头, aliases: [战斧]}
+    - {tag: scythe, name: 镰刀, aliases: [战镰]}
+    - {tag: hammer, name: 锤子, aliases: [战锤]}
+    - {tag: gun, name: 枪械, aliases: [火器]}
+    - {tag: handgun, name: 手枪, aliases: []}
+    - {tag: rifle, name: 步枪, aliases: []}
+    - {tag: sniper_rifle, name: 狙击步枪, aliases: [狙击枪]}
+    - {tag: arrow_(projectile), name: 箭矢, aliases: []}
+    - {tag: bow_(weapon), name: 弓, aliases: [弓箭武器]}
+    - {tag: holding_bow_(weapon), name: 手持弓, aliases: [持弓]}
+    - {tag: shield, name: 盾牌, aliases: [盾]}
+    - {tag: staff, name: 长杖, aliases: [法杖]}
+    - {tag: wand, name: 魔杖, aliases: [短魔杖]}
+    - {tag: dual_wielding, name: 双持武器, aliases: [双持]}
+    - {tag: holding_weapon, name: 手持武器, aliases: [持武器]}
+    - {tag: holding_sword, name: 手持剑, aliases: [持剑]}
+    - {tag: holding_gun, name: 手持枪械, aliases: [持枪]}
+    - {tag: holding_staff, name: 手持长杖, aliases: [持杖]}
+    - {tag: holding_book, name: 手持书本, aliases: [拿书]}
+    - {tag: holding_flower, name: 手持花朵, aliases: [拿花]}
+    - {tag: over_shoulder, name: 肩上物品, aliases: []}
+    - {tag: weapon_over_shoulder, name: 武器扛肩, aliases: [肩扛武器]}
+
+  构图与背景:
+    - {tag: full_body, name: 全身像, aliases: [全身]}
+    - {tag: upper_body, name: 上半身像, aliases: [上半身]}
+    - {tag: cowboy_shot, name: 大腿以上构图, aliases: [七分身]}
+    - {tag: portrait, name: 肖像, aliases: [头像构图]}
+    - {tag: close-up, name: 特写, aliases: []}
+    - {tag: profile, name: 侧面像, aliases: [侧面构图]}
+    - {tag: from_above, name: 俯拍视角, aliases: [上方视角]}
+    - {tag: from_below, name: 仰拍视角, aliases: [下方视角]}
+    - {tag: from_behind, name: 背后视角, aliases: [背面构图]}
+    - {tag: foreshortening, name: 透视缩短, aliases: [近大远小]}
+    - {tag: simple_background, name: 简单背景, aliases: [简洁背景]}
+    - {tag: white_background, name: 白色背景, aliases: [白底]}
+    - {tag: black_background, name: 黑色背景, aliases: [黑底]}
+    - {tag: blue_background, name: 蓝色背景, aliases: [蓝底]}
+    - {tag: transparent_background, name: 透明背景, aliases: [透明底]}
+    - {tag: gradient_background, name: 渐变背景, aliases: [渐变底]}
+    - {tag: outdoors, name: 室外, aliases: [户外]}
+    - {tag: indoors, name: 室内, aliases: []}
+    - {tag: sky, name: 天空, aliases: []}
+    - {tag: cloud, name: 云, aliases: [云朵]}
+    - {tag: night, name: 夜晚, aliases: [夜景]}
+    - {tag: moon, name: 月亮, aliases: [月]}
+    - {tag: starry_sky, name: 星空, aliases: []}
+    - {tag: sunset, name: 日落, aliases: [夕阳]}
+    - {tag: ocean, name: 海洋, aliases: [大海]}
+    - {tag: beach, name: 海滩, aliases: [沙滩]}
+    - {tag: forest, name: 森林, aliases: []}
+    - {tag: snow, name: 雪, aliases: [积雪]}
